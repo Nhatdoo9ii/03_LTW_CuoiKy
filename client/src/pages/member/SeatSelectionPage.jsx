@@ -1,0 +1,1 @@
+const SeatSelectionPage = () => <h2>Chọn ghế & Đếm ngược 5 phút (TV2)</h2>; export default SeatSelectionPage;

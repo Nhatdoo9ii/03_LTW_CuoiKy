@@ -1,0 +1,1 @@
+const LoginPage = () => <h2>Đăng nhập (TV3)</h2>; export default LoginPage;

@@ -1,0 +1,185 @@
+{
+  "users": [
+    {
+      "_id": "user_admin_1",
+      "name": "Quản Trị Viên",
+      "email": "admin@cinema.vn",
+      "role": "admin"
+    },
+    {
+      "_id": "user_member_1",
+      "name": "Nguyễn Văn An",
+      "email": "an.nguyen@gmail.com",
+      "role": "member"
+    },
+    {
+      "_id": "user_member_2",
+      "name": "Trần Thị Bình",
+      "email": "binh.tran@gmail.com",
+      "role": "member"
+    }
+  ],
+  "movies": [
+    {
+      "_id": "movie_1",
+      "title": "Dune: Hành Tinh Cát - Phần Hai",
+      "poster": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop",
+      "trailerUrl": "https://www.youtube.com/embed/Way9Dexny3w",
+      "duration": 166,
+      "genres": ["Khoa học viễn tưởng", "Hành động", "Phiêu lưu"],
+      "releaseDate": "2026-11-01",
+      "status": "showing",
+      "description": "Paul Atreides hợp nhất với Chani và người Fremen để trả thù những kẻ đã hủy hoại gia đình mình."
+    },
+    {
+      "_id": "movie_2",
+      "title": "Oppenheimer",
+      "poster": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=500&auto=format&fit=crop",
+      "trailerUrl": "https://www.youtube.com/embed/uYPbbksJxIg",
+      "duration": 180,
+      "genres": ["Tiểu sử", "Chính kịch", "Lịch sử"],
+      "releaseDate": "2026-11-05",
+      "status": "showing",
+      "description": "Câu chuyện về nhà vật lý lý thuyết J. Robert Oppenheimer và vai trò của ông trong việc phát triển bom nguyên tử."
+    },
+    {
+      "_id": "movie_3",
+      "title": "Spider-Man: Du Hành Vũ Trụ Nhện",
+      "poster": "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=500&auto=format&fit=crop",
+      "trailerUrl": "https://www.youtube.com/embed/cqGjhVJWtEg",
+      "duration": 140,
+      "genres": ["Hoạt hình", "Hành động", "Phiêu lưu"],
+      "releaseDate": "2026-11-10",
+      "status": "showing",
+      "description": "Miles Morales du hành qua đa vũ trụ và gặp gỡ biệt đội Người Nhện bảo vệ sự tồn tại của các thực tại."
+    },
+    {
+      "_id": "movie_4",
+      "title": "Interstellar: Hố Đen Tử Thần (Chiếu lại)",
+      "poster": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=500&auto=format&fit=crop",
+      "trailerUrl": "https://www.youtube.com/embed/zSWdZVtXT7E",
+      "duration": 169,
+      "genres": ["Khoa học viễn tưởng", "Chính kịch"],
+      "releaseDate": "2026-11-12",
+      "status": "showing",
+      "description": "Một nhóm nhà thám hiểm du hành qua lỗ sâu trong không gian nhằm đảm bảo sự sống còn cho nhân loại."
+    },
+    {
+      "_id": "movie_5",
+      "title": "Avatar: Lửa Và Tro Tàn",
+      "poster": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop",
+      "trailerUrl": "https://www.youtube.com/embed/d9MyW72ELq0",
+      "duration": 192,
+      "genres": ["Khoa học viễn tưởng", "Phiêu lưu"],
+      "releaseDate": "2026-12-19",
+      "status": "upcoming",
+      "description": "Hành trình tiếp theo của gia đình Jake Sully tại vùng đất núi lửa mới trên hành tinh Pandora."
+    }
+  ],
+  "rooms": [
+    {
+      "_id": "room_1",
+      "name": "Phòng Chiếu 01 (Standard)",
+      "totalRows": 8,
+      "seatsPerRow": 10,
+      "vipRows": ["D", "E", "F"]
+    },
+    {
+      "_id": "room_2",
+      "name": "Phòng Chiếu 02 (IMAX)",
+      "totalRows": 10,
+      "seatsPerRow": 12,
+      "vipRows": ["E", "F", "G", "H"]
+    }
+  ],
+  "showtimes": [
+    {
+      "_id": "showtime_1",
+      "movieId": "movie_1",
+      "roomId": "room_1",
+      "startTime": "2026-11-15T18:00:00.000Z",
+      "endTime": "2026-11-15T20:46:00.000Z",
+      "basePrice": 75000,
+      "vipPrice": 100000,
+      "bookedSeats": ["A1", "A2", "D5", "D6", "E4", "E5", "F7"]
+    },
+    {
+      "_id": "showtime_2",
+      "movieId": "movie_1",
+      "roomId": "room_2",
+      "startTime": "2026-11-15T21:15:00.000Z",
+      "endTime": "2026-11-16T00:01:00.000Z",
+      "basePrice": 90000,
+      "vipPrice": 120000,
+      "bookedSeats": ["E6", "E7", "F6", "F7"]
+    },
+    {
+      "_id": "showtime_3",
+      "movieId": "movie_2",
+      "roomId": "room_1",
+      "startTime": "2026-11-16T14:00:00.000Z",
+      "endTime": "2026-11-16T17:00:00.000Z",
+      "basePrice": 75000,
+      "vipPrice": 100000,
+      "bookedSeats": ["B3", "B4", "C5"]
+    },
+    {
+      "_id": "showtime_4",
+      "movieId": "movie_3",
+      "roomId": "room_2",
+      "startTime": "2026-11-16T19:30:00.000Z",
+      "endTime": "2026-11-16T21:50:00.000Z",
+      "basePrice": 85000,
+      "vipPrice": 110000,
+      "bookedSeats": ["D1", "D2", "G8", "G9"]
+    },
+    {
+      "_id": "showtime_5",
+      "movieId": "movie_4",
+      "roomId": "room_1",
+      "startTime": "2026-11-17T20:00:00.000Z",
+      "endTime": "2026-11-17T22:49:00.000Z",
+      "basePrice": 75000,
+      "vipPrice": 100000,
+      "bookedSeats": []
+    }
+  ],
+  "bookings": [
+    {
+      "_id": "booking_1",
+      "userId": "user_member_1",
+      "showtimeId": "showtime_1",
+      "seats": ["D5", "D6"],
+      "totalAmount": 200000,
+      "status": "confirmed",
+      "createdAt": "2026-11-13T10:15:00.000Z"
+    },
+    {
+      "_id": "booking_2",
+      "userId": "user_member_1",
+      "showtimeId": "showtime_3",
+      "seats": ["B3", "B4"],
+      "totalAmount": 150000,
+      "status": "confirmed",
+      "createdAt": "2026-11-13T11:30:00.000Z"
+    },
+    {
+      "_id": "booking_3",
+      "userId": "user_member_2",
+      "showtimeId": "showtime_1",
+      "seats": ["E4", "E5"],
+      "totalAmount": 200000,
+      "status": "confirmed",
+      "createdAt": "2026-11-13T14:20:00.000Z"
+    },
+    {
+      "_id": "booking_4",
+      "userId": "user_member_1",
+      "showtimeId": "showtime_2",
+      "seats": ["A5"],
+      "totalAmount": 90000,
+      "status": "cancelled",
+      "createdAt": "2026-11-12T09:00:00.000Z"
+    }
+  ]
+}

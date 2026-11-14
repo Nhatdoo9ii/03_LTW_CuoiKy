@@ -1,0 +1,35 @@
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #e11d48;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.link {
+  text-decoration: none;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.activeLink {
+  text-decoration: none;
+  color: #e11d48;
+  font-weight: 700;
+}

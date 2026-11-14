@@ -1,0 +1,1 @@
+const MovieDetailPage = () => <h2>Chi tiết phim & Chọn suất chiếu (TV1 + TV2)</h2>; export default MovieDetailPage;

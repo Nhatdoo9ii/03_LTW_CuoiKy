@@ -1,0 +1,1 @@
+const MyTicketsPage = () => <h2>Lịch sử vé của tôi (TV3)</h2>; export default MyTicketsPage;

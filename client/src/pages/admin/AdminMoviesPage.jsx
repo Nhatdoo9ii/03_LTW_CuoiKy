@@ -1,0 +1,1 @@
+const AdminMoviesPage = () => <h2>Admin - Quản lý Phim (TV1)</h2>; export default AdminMoviesPage;

@@ -1,0 +1,1 @@
+const AdminStatsPage = () => <h2>Admin - Thống kê Doanh thu (TV3)</h2>; export default AdminStatsPage;

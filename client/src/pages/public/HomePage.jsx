@@ -1,0 +1,1 @@
+const HomePage = () => <h2>Trang chủ - Danh sách phim (TV1)</h2>; export default HomePage;

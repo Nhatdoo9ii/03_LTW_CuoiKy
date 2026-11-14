@@ -1,0 +1,1 @@
+const AdminRoomsPage = () => <h2>Admin - Quản lý Phòng chiếu (TV2)</h2>; export default AdminRoomsPage;

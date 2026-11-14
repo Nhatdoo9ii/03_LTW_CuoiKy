@@ -1,0 +1,1 @@
+const RegisterPage = () => <h2>Đăng ký tài khoản (TV3)</h2>; export default RegisterPage;
