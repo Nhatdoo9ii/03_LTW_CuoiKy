@@ -1,6 +1,6 @@
 import styles from './Pagination.module.css';
 
-function Pagination({ currentPage = 1, totalPages = 1, onPageChange }) {
+function Pagination({ currentPage, totalPages, onPageChange }) {
   // Ẩn thanh phân trang nếu chỉ có 1 trang duy nhất
   if (totalPages <= 1) return null;
 
