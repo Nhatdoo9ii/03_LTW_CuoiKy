@@ -9,6 +9,8 @@ import MovieDetailPage from './pages/public/MovieDetailPage';
 import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import NotFoundPage from './pages/public/NotFoundPage';
+import HomePageUpcomming from './pages/public/HomePageUpcoming';
+import PromotionPage from './pages/public/PromotionPage';
 
 import SeatSelectionPage from './pages/member/SeatSelectionPage';
 import CheckoutPage from './pages/member/CheckoutPage';
@@ -26,7 +28,9 @@ const App = () => {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
+          <Route path="upcoming" element={<HomePageUpcomming />} />
           <Route path="movies/:id" element={<MovieDetailPage />} />
+          <Route path="promotion" element={<PromotionPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
 

@@ -1,35 +1,431 @@
 .header {
-  padding: 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
   background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  height: 72px;
+  padding: 0 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 20px;
 }
 
-.logo {
-  font-size: 20px;
-  font-weight: 700;
+/* 1. LOGO & THƯƠNG HIỆU */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-decoration: none;
-  color: #e11d48;
+  flex-shrink: 0;
 }
 
+.logoImg {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 6px;
+  background-color: #ffffff;
+  padding: 2px;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brandTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #e11d48;
+  letter-spacing: -0.3px;
+}
+
+.brandSubtitle {
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 1.2px;
+}
+
+/* 2. MENU Ở GIỮA */
 .nav {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  height: 100%;
 }
 
-.link {
+.navLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
   text-decoration: none;
-  color: #1e293b;
-  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: #e11d48;
 }
 
 .activeLink {
+  color: #e11d48;
+}
+
+.activeLink::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #e11d48;
+  border-radius: 3px 3px 0 0;
+}
+
+/* 3. CỤM HÀNH ĐỘNG BÊN PHẢI */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.themeToggleBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.themeToggleBtn:hover {
+  border-color: #e11d48;
+  color: #e11d48;
+  background-color: #fff1f2;
+}
+
+/* Nút Đăng nhập / Đăng ký */
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
   text-decoration: none;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.loginBtn:hover {
+  background-color: #f1f5f9;
+  color: #e11d48;
+}
+
+.registerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #e11d48;
+  text-decoration: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.registerBtn:hover {
+  background-color: #be123c;
+  transform: translateY(-1px);
+}
+
+/* Cụm Profile khi đã đăng nhập */
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notifyBtn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.notifyBtn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.notifyDot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #e11d48;
+}
+
+.profileWrapper {
+  position: relative;
+}
+
+.profileTrigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.profileTrigger:hover {
+  border-color: #cbd5e1;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: #ffe4e6;
   color: #e11d48;
   font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.userRole {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1);
+  padding: 6px;
+  z-index: 200;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  text-align: left;
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background-color: #f8fafc;
+  color: #e11d48;
+}
+
+.dropdownDivider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 4px 0;
+}
+
+.logoutItem {
+  color: #e11d48;
+}
+
+/* ================= CHẾ ĐỘ TỐI (DARK MODE) ================= */
+.headerDark {
+  background-color: #0f172a;
+  border-bottom-color: #1e293b;
+}
+
+.headerDark .brandSubtitle {
+  color: #94a3b8;
+}
+
+.headerDark .navLink {
+  color: #cbd5e1;
+}
+
+.headerDark .navLink:hover,
+.headerDark .activeLink {
+  color: #fb7185;
+}
+
+.headerDark .themeToggleBtn {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #facc15;
+}
+
+.headerDark .themeToggleBtn:hover {
+  background-color: #334155;
+  border-color: #facc15;
+}
+
+.headerDark .loginBtn {
+  color: #e2e8f0;
+}
+
+.headerDark .loginBtn:hover {
+  background-color: #1e293b;
+}
+
+.headerDark .profileTrigger {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.headerDark .userName {
+  color: #f8fafc;
+}
+
+.headerDark .userRole {
+  color: #94a3b8;
+}
+
+.headerDark .dropdownMenu {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.headerDark .dropdownItem {
+  color: #e2e8f0;
+}
+
+.headerDark .dropdownItem:hover {
+  background-color: #334155;
+}
+
+/* ================= RESPONSIVE MOBILE ================= */
+.mobileMenuBtn {
+  display: none;
+  font-size: 22px;
+  background: none;
+  border: none;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.headerDark .mobileMenuBtn {
+  color: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .mobileMenuBtn {
+    display: block;
+  }
+
+  .nav {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+  }
+
+  .headerDark .nav {
+    background-color: #0f172a;
+    border-bottom-color: #1e293b;
+  }
+
+  .navOpen {
+    display: flex;
+  }
+
+  .navLink {
+    width: 100%;
+    padding: 12px 0;
+    height: auto;
+  }
+
+  .activeLink::after {
+    display: none;
+  }
+
+  .loginBtn span,
+  .userInfo {
+    display: none;
+  }
 }
