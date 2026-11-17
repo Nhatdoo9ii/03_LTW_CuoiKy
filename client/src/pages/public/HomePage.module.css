@@ -1,0 +1,123 @@
+.pageContainer {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tabBtn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabBtn:hover {
+  border-color: #e11d48;
+  color: #e11d48;
+}
+
+.activeTab {
+  background-color: #e11d48;
+  border-color: #e11d48;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);
+}
+
+.activeTab:hover {
+  color: #ffffff;
+}
+
+.resultCount {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.resultCount strong {
+  color: #0f172a;
+}
+
+/* Lưới 4 cột Desktop -> 2 cột Tablet -> 1 cột Mobile */
+.movieGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  color: #64748b;
+}
+
+.emptyResetBtn {
+  margin-top: 14px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: #e11d48;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Dark Mode */
+:global(html[data-theme='dark']) .tabBtn {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  color: #cbd5e1;
+}
+
+:global(html[data-theme='dark']) .activeTab {
+  background-color: #e11d48;
+  border-color: #e11d48;
+  color: #ffffff;
+}
+
+:global(html[data-theme='dark']) .resultCount strong {
+  color: #f8fafc;
+}
+
+:global(html[data-theme='dark']) .emptyState {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .movieGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .pageContainer {
+    padding: 20px 16px 40px;
+  }
+
+  .movieGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,123 @@
+.heroSection {
+  background: linear-gradient(135deg, #f8fafc 0%, #fff1f2 100%);
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 40px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.heroContent {
+  max-width: 540px;
+}
+
+.heroTitle {
+  font-size: 34px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+  margin: 0 0 14px 0;
+  letter-spacing: -0.5px;
+}
+
+.highlightText {
+  color: #e11d48;
+}
+
+.heroDesc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #64748b;
+  margin: 0 0 22px 0;
+}
+
+.studentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #ffffff;
+  border: 1px solid #ffe4e6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.08);
+}
+
+/* Cụm 3 Poster bên phải */
+.posterShowcase {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.showcaseCard {
+  width: 120px;
+  height: 175px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+  border: 3px solid #ffffff;
+  transition: transform 0.3s ease;
+}
+
+.cardLeft {
+  transform: rotate(-4deg) translateY(6px);
+}
+
+.cardCenter {
+  width: 134px;
+  height: 192px;
+  z-index: 2;
+}
+
+.cardRight {
+  transform: rotate(4deg) translateY(6px);
+}
+
+.showcaseCard:hover {
+  transform: translateY(-6px) scale(1.03);
+}
+
+/* Dark Mode */
+:global(html[data-theme='dark']) .heroSection {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b2e 100%);
+  border-color: #1e293b;
+}
+
+:global(html[data-theme='dark']) .heroTitle {
+  color: #f8fafc;
+}
+
+:global(html[data-theme='dark']) .heroDesc {
+  color: #94a3b8;
+}
+
+:global(html[data-theme='dark']) .studentBadge {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .heroSection {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px 24px;
+  }
+
+  .posterShowcase {
+    display: none;
+  }
+
+  .heroTitle {
+    font-size: 26px;
+  }
+}
