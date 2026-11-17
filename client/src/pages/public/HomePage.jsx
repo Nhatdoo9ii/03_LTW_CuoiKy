@@ -1,4 +1,7 @@
+import HeroBanner from "../../components/movies/HeroBanner";
 const HomePage = () => (
-    <h3>HomePage</h3>
+    <div>
+        <HeroBanner />
+    </div>
 );
 export default HomePage
