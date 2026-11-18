@@ -1,3 +1,46 @@
+/* 1. BẢNG BIẾN MÀU CHẾ ĐỘ SÁNG (MẶC ĐỊNH) */
+:root {
+  --color-primary: #e11d48;
+  --color-primary-hover: #be123c;
+  --color-primary-light: #ffe4e6;
+
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+
+  --border-color: #e2e8f0;
+  --border-subtle: #f1f5f9;
+
+  --text-heading: #0f172a;
+  --text-body: #475569;
+  --text-muted: #64748b;
+
+  --color-success: #16a34a;
+  --color-warning: #ea580c;
+}
+
+/* 2. TỰ ĐỘNG ĐỔI GIÁ TRỊ BIẾN KHI BẬT DARK MODE */
+html[data-theme='dark'] {
+  --color-primary: #e11d48;
+  --color-primary-hover: #fb7185;
+  --color-primary-light: #3f1522;
+
+  --bg-page: #0b1120;
+  --bg-surface: #0f172a;
+  --bg-subtle: #1e293b;
+
+  --border-color: #334155;
+  --border-subtle: #1e293b;
+
+  --text-heading: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --color-success: #22c55e;
+  --color-warning: #f97316;
+}
+
+/* 3. RESET & NỀN TẢNG TOÀN TRANG */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -5,16 +48,14 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: #ffffff;
-  color: #1e293b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-heading);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-html[data-theme='dark'],
-html[data-theme='dark'] body,
-html[data-theme='dark'] #root {
-  background-color: #0b1120;
-  color: #f1f5f9;
+#root {
   min-height: 100vh;
 }
