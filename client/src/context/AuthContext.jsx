@@ -3,13 +3,26 @@ import mockData from '../data/mockData.json';
 
 const AuthContext = createContext(null);
 
+// Thêm sẵn tài khoản sinh viên để test đăng nhập
+const defaultDemoUsers = [
+  ...mockData.users,
+  {
+    id: 'u_longtb',
+    fullName: 'Trần Bảo Long',
+    email: 'longtb.b25cc130@stu.ptit.edu.vn',
+    phone: '0364054979',
+    role: 'member',
+    isStudent: true,
+  },
+];
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // Lắng nghe thay đổi từ localStorage nếu người dùng mở nhiều tab
+  // Lắng nghe thay đổi từ localStorage nếu mở nhiều tab
   useEffect(() => {
     const handleStorageChange = () => {
       const savedUser = localStorage.getItem('user');
@@ -19,10 +32,10 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Xử lý đăng nhập (tạm check với mockData và user đăng ký lưu ở localStorage)
+  // Xử lý đăng nhập (tạm check với danh sách mẫu và user đăng ký lưu ở localStorage)
   const login = async (email, password) => {
     const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-    const allUsers = [...mockData.users, ...registeredUsers];
+    const allUsers = [...defaultDemoUsers, ...registeredUsers];
 
     const foundUser = allUsers.find(
       (u) => u.email.toLowerCase() === email.trim().toLowerCase()
@@ -32,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Email không tồn tại trong hệ thống!');
     }
 
-    // Tài khoản mới tạo thì check mật khẩu, còn tài khoản mẫu trong mockData thì bỏ qua
+    // Tài khoản mới tạo thì check mật khẩu, còn tài khoản mẫu thì bỏ qua
     if (foundUser.password && foundUser.password !== password) {
       throw new Error('Mật khẩu không chính xác!');
     }
@@ -54,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   // Xử lý đăng ký tài khoản mới
   const register = async ({ fullName, email, phone, password }) => {
     const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-    const allUsers = [...mockData.users, ...registeredUsers];
+    const allUsers = [...defaultDemoUsers, ...registeredUsers];
 
     const isEmailExist = allUsers.some(
       (u) => u.email.toLowerCase() === email.trim().toLowerCase()
@@ -104,7 +117,7 @@ export const useAuth = () => {
       user: savedUser ? JSON.parse(savedUser) : null,
       login: async (email, password) => {
         const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-        const allUsers = [...mockData.users, ...registeredUsers];
+        const allUsers = [...defaultDemoUsers, ...registeredUsers];
         const foundUser = allUsers.find(
           (u) => u.email.toLowerCase() === email.trim().toLowerCase()
         );
@@ -122,7 +135,7 @@ export const useAuth = () => {
       },
       register: async ({ fullName, email, phone, password }) => {
         const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-        const allUsers = [...mockData.users, ...registeredUsers];
+        const allUsers = [...defaultDemoUsers, ...registeredUsers];
         if (allUsers.some((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
           throw new Error('Email này đã được sử dụng!');
         }

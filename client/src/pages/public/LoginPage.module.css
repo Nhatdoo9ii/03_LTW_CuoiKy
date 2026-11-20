@@ -1,0 +1,137 @@
+.homeWrapper {
+  background-color: var(--bg-page);
+  color: var(--text-heading);
+  min-height: 100vh;
+  padding-bottom: 64px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ================= THANH CHUYỂN TAB & ĐẾM SỐ PHIM ================= */
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 32px 0 24px;
+}
+
+.tabButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tabBtn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-heading);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tabBtnActive {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.tabBtnActive:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #ffffff;
+}
+
+.resultCount {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.resultCount strong {
+  color: var(--text-heading);
+  font-weight: 700;
+}
+
+/* ================= LƯỚI DANH SÁCH PHIM ================= */
+.moviesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* ================= TRẠNG THÁI KHÔNG TÌM THẤY PHIM ================= */
+.emptyState {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.emptyState p {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.resetBtn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.resetBtn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 1024px) {
+  .moviesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .tabHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tabButtons {
+    width: 100%;
+  }
+
+  .tabBtn {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+  }
+
+  .moviesGrid {
+    grid-template-columns: 1fr;
+  }
+}
