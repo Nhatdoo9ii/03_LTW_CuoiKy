@@ -23,19 +23,21 @@ const MyTicketsPage = () => {
   const [tickets, setTickets] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all'); // all | confirmed | cancelled
 
+  // State quản lý Modal xác nhận hủy vé và thông báo kết quả
+  const [ticketToCancel, setTicketToCancel] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+
   // Khởi tạo danh sách vé của user hiện tại (kết hợp mockData + localStorage)
   useEffect(() => {
     if (!user) return;
 
     const savedBookings = JSON.parse(localStorage.getItem('ptit_bookings') || 'null');
 
-    // Nếu chưa có dữ liệu trong localStorage thì tạo sẵn dữ liệu mẫu động theo giờ hiện tại
     if (!savedBookings) {
       const tomorrowSlot = getLocalDateAndTime(new Date(Date.now() + 24 * 60 * 60 * 1000)); // +24h (Hủy được)
       const nearShowSlot = getLocalDateAndTime(new Date(Date.now() + 60 * 60 * 1000));      // +1h (Khóa vì < 2h)
       const yesterdaySlot = getLocalDateAndTime(new Date(Date.now() - 24 * 60 * 60 * 1000)); // -24h (Đã chiếu)
 
-      // Ghép thông tin chi tiết từ mockData (phim, phòng, suất chiếu)
       const enrichedMockBookings = (mockData.bookings || []).map((b) => {
         const showtime = mockData.showtimes?.find((s) => s.id === b.showtimeId) || {};
         const movie = mockData.movies?.find((m) => m.id === showtime.movieId) || {};
@@ -59,7 +61,6 @@ const MyTicketsPage = () => {
       const sampleMovie2 = mockData.movies?.[1] || { title: 'Vương Quốc Diệu Kỳ & Xứ Sở Phép Thuật', posterUrl: '' };
       const sampleMovie3 = mockData.movies?.[2] || { title: 'Dune: Hành Tinh Cát 2', posterUrl: '' };
 
-      // 3 vé mẫu cho Trần Bảo Long bao phủ đủ 3 trạng thái để demo bất kỳ lúc nào
       const demoTicketsForLong = [
         {
           id: 'bk_long_01',
@@ -110,29 +111,51 @@ const MyTicketsPage = () => {
     }
   }, [user]);
 
-  // Lọc vé theo tab trạng thái bằng useMemo
+  // Tự động tắt thông báo toast sau 3 giây
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(''), 3000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
   const filteredTickets = useMemo(() => {
     if (filterStatus === 'all') return tickets;
     return tickets.filter((t) => t.status === filterStatus);
   }, [tickets, filterStatus]);
 
-  // Xử lý hủy vé
-  const handleCancelTicket = (ticketId) => {
-    const isConfirm = window.confirm('Bạn có chắc chắn muốn hủy vé này không?');
-    if (!isConfirm) return;
+  // Mở Modal xác nhận khi người dùng bấm nút Hủy vé trên TicketCard
+  const handleOpenCancelModal = (ticketId) => {
+    const targetTicket = tickets.find((t) => t.id === ticketId);
+    if (targetTicket) {
+      setTicketToCancel(targetTicket);
+    }
+  };
+
+  // Thực hiện hủy vé khi người dùng bấm xác nhận trong Modal
+  const handleConfirmCancel = () => {
+    if (!ticketToCancel) return;
 
     const allBookings = JSON.parse(localStorage.getItem('ptit_bookings') || '[]');
     const updatedAll = allBookings.map((item) =>
-      item.id === ticketId ? { ...item, status: 'cancelled' } : item
+      item.id === ticketToCancel.id ? { ...item, status: 'cancelled' } : item
     );
 
     localStorage.setItem('ptit_bookings', JSON.stringify(updatedAll));
     setTickets(updatedAll.filter((item) => item.userId === user.id));
+    setToastMessage(`Đã hủy thành công vé #${ticketToCancel.bookingCode}`);
+    setTicketToCancel(null);
   };
 
   return (
     <section className={styles.pageWrapper}>
       <div className={styles.container}>
+        {/* Thông báo nhanh sau khi hủy vé */}
+        {toastMessage && (
+          <div className={styles.toastBanner} role="status">
+            ✓ {toastMessage}
+          </div>
+        )}
+
         <header className={styles.pageHeader}>
           <div>
             <h1 className={styles.pageTitle}>Vé của tôi</h1>
@@ -141,7 +164,6 @@ const MyTicketsPage = () => {
             </p>
           </div>
 
-          {/* Bộ lọc trạng thái */}
           <div className={styles.filterTabs}>
             <button
               type="button"
@@ -167,14 +189,13 @@ const MyTicketsPage = () => {
           </div>
         </header>
 
-        {/* Danh sách vé */}
         {filteredTickets.length > 0 ? (
           <div className={styles.ticketList}>
             {filteredTickets.map((ticket) => (
               <TicketCard
                 key={ticket.id}
                 ticket={ticket}
-                onCancelTicket={handleCancelTicket}
+                onCancelTicket={handleOpenCancelModal}
               />
             ))}
           </div>
@@ -187,6 +208,54 @@ const MyTicketsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Modal xác nhận hủy vé */}
+      {ticketToCancel && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setTicketToCancel(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalIcon}>!</div>
+            <h2 className={styles.modalTitle}>Xác nhận hủy vé?</h2>
+            <p className={styles.modalDesc}>
+              Bạn có chắc chắn muốn hủy vé xem phim dưới đây không? Thao tác này không thể hoàn tác.
+            </p>
+
+            <div className={styles.modalTicketInfo}>
+              <p>
+                <strong>Phim:</strong> {ticketToCancel.movieTitle}
+              </p>
+              <p>
+                <strong>Mã vé:</strong> #{ticketToCancel.bookingCode} • <strong>Ghế:</strong>{' '}
+                {ticketToCancel.seats.join(', ')}
+              </p>
+              <p>
+                <strong>Suất chiếu:</strong> {ticketToCancel.startTime} ({ticketToCancel.date})
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.keepBtn}
+                onClick={() => setTicketToCancel(null)}
+              >
+                Giữ lại vé
+              </button>
+              <button
+                type="button"
+                className={styles.confirmCancelBtn}
+                onClick={handleConfirmCancel}
+              >
+                Xác nhận hủy vé
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
