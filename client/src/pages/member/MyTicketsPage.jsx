@@ -5,6 +5,19 @@ import TicketCard from '../../components/tickets-admin/TicketCard';
 import mockData from '../../data/mockData.json';
 import styles from './MyTicketsPage.module.css';
 
+// Hàm tách ngày (YYYY-MM-DD) và giờ (HH:MM) theo giờ địa phương từ mốc thời gian bất kỳ
+const getLocalDateAndTime = (dateObj) => {
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  return {
+    date: `${year}-${month}-${day}`,
+    startTime: `${hours}:${minutes}`,
+  };
+};
+
 const MyTicketsPage = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
@@ -16,10 +29,11 @@ const MyTicketsPage = () => {
 
     const savedBookings = JSON.parse(localStorage.getItem('ptit_bookings') || 'null');
 
-    // Nếu chưa có dữ liệu trong localStorage thì tạo sẵn dữ liệu mẫu để test được ngay
+    // Nếu chưa có dữ liệu trong localStorage thì tạo sẵn dữ liệu mẫu động theo giờ hiện tại
     if (!savedBookings) {
-      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const today = new Date().toISOString().split('T')[0];
+      const tomorrowSlot = getLocalDateAndTime(new Date(Date.now() + 24 * 60 * 60 * 1000)); // +24h (Hủy được)
+      const nearShowSlot = getLocalDateAndTime(new Date(Date.now() + 60 * 60 * 1000));      // +1h (Khóa vì < 2h)
+      const yesterdaySlot = getLocalDateAndTime(new Date(Date.now() - 24 * 60 * 60 * 1000)); // -24h (Đã chiếu)
 
       // Ghép thông tin chi tiết từ mockData (phim, phòng, suất chiếu)
       const enrichedMockBookings = (mockData.bookings || []).map((b) => {
@@ -33,7 +47,7 @@ const MyTicketsPage = () => {
           movieTitle: movie.title || 'Phim chiếu rạp PTIT',
           posterUrl: movie.posterUrl || '',
           roomName: room.name || 'Phòng 01',
-          date: showtime.date || tomorrow,
+          date: showtime.date || tomorrowSlot.date,
           startTime: showtime.startTime || '19:30',
           seats: b.seats || ['D5', 'D6'],
           totalAmount: b.totalAmount || 110000,
@@ -41,10 +55,11 @@ const MyTicketsPage = () => {
         };
       });
 
-      // Tạo thêm 2 vé mẫu riêng cho tài khoản Trần Bảo Long (1 vé hủy được, 1 vé sát giờ bị khóa)
-      const sampleMovie1 = mockData.movies?.[0] || { title: 'Mai', posterUrl: '' };
-      const sampleMovie2 = mockData.movies?.[1] || { title: 'Dune: Hành Tinh Cát 2', posterUrl: '' };
+      const sampleMovie1 = mockData.movies?.[0] || { title: 'Chiến Dịch Bóng Đêm: Tái Đấu', posterUrl: '' };
+      const sampleMovie2 = mockData.movies?.[1] || { title: 'Vương Quốc Diệu Kỳ & Xứ Sở Phép Thuật', posterUrl: '' };
+      const sampleMovie3 = mockData.movies?.[2] || { title: 'Dune: Hành Tinh Cát 2', posterUrl: '' };
 
+      // 3 vé mẫu cho Trần Bảo Long bao phủ đủ 3 trạng thái để demo bất kỳ lúc nào
       const demoTicketsForLong = [
         {
           id: 'bk_long_01',
@@ -53,8 +68,8 @@ const MyTicketsPage = () => {
           movieTitle: sampleMovie1.title,
           posterUrl: sampleMovie1.posterUrl,
           roomName: 'Phòng Chiếu 01',
-          date: tomorrow, // Ngày mai -> còn > 2 tiếng nên nút Hủy vé hoạt động
-          startTime: '20:00',
+          date: tomorrowSlot.date,
+          startTime: tomorrowSlot.startTime,
           seats: ['E5', 'E6'],
           totalAmount: 130000,
           status: 'confirmed',
@@ -66,10 +81,23 @@ const MyTicketsPage = () => {
           movieTitle: sampleMovie2.title,
           posterUrl: sampleMovie2.posterUrl,
           roomName: 'Phòng IMAX PTIT',
-          date: today, // Giờ đã qua -> nút Hủy vé tự động bị khóa
-          startTime: '08:00',
+          date: nearShowSlot.date,
+          startTime: nearShowSlot.startTime,
           seats: ['F4'],
           totalAmount: 75000,
+          status: 'confirmed',
+        },
+        {
+          id: 'bk_long_03',
+          bookingCode: 'PTIT-6105',
+          userId: 'u_longtb',
+          movieTitle: sampleMovie3.title,
+          posterUrl: sampleMovie3.posterUrl,
+          roomName: 'Phòng Chiếu 02',
+          date: yesterdaySlot.date,
+          startTime: yesterdaySlot.startTime,
+          seats: ['C3', 'C4'],
+          totalAmount: 110000,
           status: 'confirmed',
         },
       ];
@@ -105,7 +133,6 @@ const MyTicketsPage = () => {
   return (
     <section className={styles.pageWrapper}>
       <div className={styles.container}>
-        {/* Tiêu đề trang */}
         <header className={styles.pageHeader}>
           <div>
             <h1 className={styles.pageTitle}>Vé của tôi</h1>
