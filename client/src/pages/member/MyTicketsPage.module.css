@@ -1,0 +1,109 @@
+.pageWrapper {
+  padding: 32px 16px 60px;
+  min-height: calc(100vh - 200px);
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin: 0 0 6px;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.activeTab {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.activeTab:hover {
+  color: #ffffff;
+}
+
+.ticketList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.emptyBox {
+  text-align: center;
+  padding: 48px 20px;
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-color);
+  border-radius: 16px;
+}
+
+.emptyText {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.bookNowBtn {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.bookNowBtn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
