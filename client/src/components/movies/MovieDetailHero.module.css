@@ -1,0 +1,242 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.heroSection {
+  position: relative;
+  padding: 32px 0 48px;
+  overflow: hidden;
+  background-color: #0b1120;
+  color: #f8fafc;
+}
+
+.backdropImage {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(18px) brightness(0.35);
+  transform: scale(1.08);
+  z-index: 0;
+}
+
+.backdropOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 17, 32, 0.72) 0%,
+    rgba(11, 17, 32, 0.94) 100%
+  );
+  z-index: 1;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 28px;
+}
+
+.breadcrumbLink {
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumbLink:hover {
+  color: #fb7185;
+}
+
+.breadcrumbCurrent {
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.heroContent {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+.posterBox {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.posterImg {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.ageBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.ageT18 {
+  background-color: #e11d48;
+}
+
+.ageT16 {
+  background-color: #ea580c;
+}
+
+.ageP {
+  background-color: #16a34a;
+}
+
+.infoBox {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tagRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.durationTag {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ratingTag {
+  color: #fbbf24;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.movieTitle {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.originalTitle {
+  font-size: 15px;
+  color: #94a3b8;
+  margin-top: -8px;
+}
+
+.synopsis {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #cbd5e1;
+  max-width: 780px;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 24px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 14px;
+}
+
+.metaItem,
+.metaItemFull {
+  display: flex;
+  gap: 8px;
+}
+
+.metaItemFull {
+  grid-column: 1 / -1;
+}
+
+.metaLabel {
+  color: #94a3b8;
+  min-width: 85px;
+  flex-shrink: 0;
+}
+
+.metaValue {
+  color: #f1f5f9;
+  font-weight: 500;
+}
+
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.trailerBtn {
+  padding: 12px 22px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trailerBtn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.scrollBookBtn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.scrollBookBtn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+@media (max-width: 768px) {
+  .heroContent {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .posterBox {
+    max-width: 220px;
+    margin: 0 auto;
+  }
+
+  .movieTitle {
+    font-size: 24px;
+  }
+
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+}

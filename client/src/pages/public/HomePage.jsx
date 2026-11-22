@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import mockData from '../../data/mockData.json';
+import useDebounce from '../../hooks/useDebounce';
 import HeroBanner from '../../components/movies/HeroBanner';
 import MovieFilterBar from '../../components/movies/MovieFilterBar';
 import MovieCard from '../../components/movies/MovieCard';
@@ -18,12 +19,18 @@ function HomePage() {
 
   // State bộ lọc & tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 400);
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
 
   // State phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
+
+  // Reset về trang 1 khi từ khóa debounced thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
 
   // Đồng bộ tab khi người dùng bấm link trên Header (/ hoặc /upcoming)
   useEffect(() => {
@@ -39,7 +46,7 @@ function HomePage() {
     return movies.filter((movie) => {
       const matchesStatus = movie.status === activeTab;
 
-      const keyword = searchTerm.trim().toLowerCase();
+      const keyword = debouncedSearchTerm.trim().toLowerCase();
       const matchesSearch =
         !keyword ||
         movie.title.toLowerCase().includes(keyword) ||
@@ -58,7 +65,7 @@ function HomePage() {
 
       return matchesStatus && matchesSearch && matchesGenre && matchesDate;
     });
-  }, [movies, activeTab, searchTerm, selectedGenre, selectedDate]);
+  }, [movies, activeTab, debouncedSearchTerm, selectedGenre, selectedDate]);
 
   // Tính toán phân trang
   const totalPages = Math.ceil(filteredMovies.length / itemsPerPage);
