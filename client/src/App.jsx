@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 
 import MainLayout from './components/common/MainLayout';
 import AdminLayout from './components/common/AdminLayout';
@@ -23,8 +24,9 @@ import AdminStatsPage from './pages/admin/AdminStatsPage';
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="upcoming" element={<HomePage />} />
@@ -85,6 +87,7 @@ const App = () => {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
+  </AuthProvider>
   );
 };
 
