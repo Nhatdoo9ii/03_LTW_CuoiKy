@@ -1,41 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import logoPtit from '../../assets/logo-ptit.png';
 import styles from './Header.module.css';
 
 function Header() {
   const navigate = useNavigate();
-
-  // State quản lý chế độ Sáng / Tối
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('ptit_theme') === 'dark';
-  });
+  const { isDarkMode, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   // State quản lý menu mobile và dropdown user
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
-  // Giả lập lấy thông tin user từ localStorage (sau này thay bằng Redux/AuthContext)
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  // Đồng bộ theme lên thẻ <html> mỗi khi bấm nút Sáng/Tối
-  useEffect(() => {
-    const theme = isDarkMode ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('ptit_theme', theme);
-  }, [isDarkMode]);
-
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+    logout();
     setIsUserDropdownOpen(false);
     navigate('/login');
   };
