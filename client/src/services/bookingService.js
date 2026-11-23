@@ -58,23 +58,17 @@ const saveLocalBooking = (booking) => {
 };
 
 const normalizeSeatCodes = (seats = []) =>
-  seats
-    .map((seat) => (typeof seat === 'string' ? seat : seat?.code))
-    .filter(Boolean);
+  seats.map((seat) => (typeof seat === 'string' ? seat : seat?.code)).filter(Boolean);
 
 const getFallbackOccupiedSeats = (showtimeId) => {
   const showtime = mockData.showtimes.find(
     (item) => String(item.id) === String(showtimeId)
   );
-  const mockBooked = Array.isArray(showtime?.bookedSeats)
-    ? showtime.bookedSeats
-    : [];
+  const mockBooked = Array.isArray(showtime?.bookedSeats) ? showtime.bookedSeats : [];
 
   const localBooked = readLocalBookings()
-    .filter(
-      (booking) =>
-        String(booking.showtimeId) === String(showtimeId) &&
-        booking.status !== 'cancelled'
+    .filter((booking) =>
+        String(booking.showtimeId) === String(showtimeId) && booking.status !== 'cancelled'
     )
     .flatMap((booking) => normalizeSeatCodes(booking.seats));
 
@@ -84,10 +78,8 @@ const getFallbackOccupiedSeats = (showtimeId) => {
 const generateBookingIdentifiers = () => {
   const randomDigits = String(Math.floor(100000 + Math.random() * 900000));
   const now = new Date();
-  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
-    2,
-    '0'
-  )}${String(now.getDate()).padStart(2, '0')}`;
+  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2,'0')}
+  ${String(now.getDate()).padStart(2, '0')}`;
 
   return {
     id: `BK-${datePart}-${randomDigits}`,

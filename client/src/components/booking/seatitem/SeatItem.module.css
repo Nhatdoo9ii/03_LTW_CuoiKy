@@ -1,0 +1,117 @@
+.seatBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.14s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.seatNumber {
+  line-height: 1;
+}
+
+/* Ghế Thường */
+.standard {
+  background-color: #eef3fb;
+  border-color: #dbe5f4;
+  color: #334155;
+}
+
+.standard:hover:not(:disabled) {
+  background-color: #e0ebfb;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+/* Ghế VIP */
+.vip {
+  background-color: #fef9e7;
+  border-color: #f3e2b3;
+  color: #92620f;
+}
+
+.vip:hover:not(:disabled) {
+  background-color: #fdf1c7;
+  border-color: #eab308;
+  transform: translateY(-1px);
+}
+
+/* Ghế Đang chọn */
+.selected,
+.selected:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(225, 29, 72, 0.28);
+  transform: translateY(-1px);
+}
+
+/* Ghế Đã bán / Khóa */
+.booked,
+.booked:hover {
+  background-color: #d8e1ee;
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.88;
+}
+
+.seatBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Dark Mode tương thích với html[data-theme='dark'] trong index.css */
+:global(html[data-theme='dark']) .standard {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:global(html[data-theme='dark']) .standard:hover:not(:disabled) {
+  background-color: #273549;
+  border-color: #64748b;
+}
+
+:global(html[data-theme='dark']) .vip {
+  background-color: #362a11;
+  border-color: #785a1c;
+  color: #fcd34d;
+}
+
+:global(html[data-theme='dark']) .vip:hover:not(:disabled) {
+  background-color: #4a3916;
+  border-color: #fbbf24;
+}
+
+:global(html[data-theme='dark']) .booked,
+:global(html[data-theme='dark']) .booked:hover {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #475569;
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .seatBtn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: 0.72rem;
+  }
+}
