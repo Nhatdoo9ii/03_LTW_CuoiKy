@@ -11,7 +11,7 @@ import RegisterPage from './pages/public/RegisterPage';
 import NotFoundPage from './pages/public/NotFoundPage';
 import PromotionPage from './pages/public/PromotionPage';
 
-import SeatSelectionPage from './pages/member/SeatSelectionPage';
+import SeatSelectionPage from './pages/member/seatselection/SeatSelectionPage';
 import CheckoutPage from './pages/member/CheckoutPage';
 import BookingSuccessPage from './pages/member/BookingSuccessPage';
 import MyTicketsPage from './pages/member/MyTicketsPage';
