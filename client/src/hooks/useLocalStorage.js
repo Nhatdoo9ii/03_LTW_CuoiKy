@@ -17,45 +17,35 @@ const readStorageValue = (key, initialValue) => {
   }
 };
 
-/**
- * Custom hook đồng bộ state React với window.localStorage.
- * Hỗ trợ lazy initializer, functional update và đồng bộ giữa các tab trình duyệt.
- *
- * @template T
- * @param {string} key - Tên key lưu trong localStorage
- * @param {T | (() => T)} initialValue - Giá trị mặc định ban đầu
- * @returns {[T, (value: T | ((prev: T) => T)) => void, () => void]}
- */
 export const useLocalStorage = (key, initialValue) => {
   const initialValueRef = useRef(initialValue);
-  const [storedValue, setStoredValue] = useState(() =>
-    readStorageValue(key, initialValue)
-  );
-  const storedValueRef = useRef(storedValue);
+
+  const [state, setState] = useState(() => ({
+    key,
+    value: readStorageValue(key, initialValue),
+  }));
+
+  const currentValue =
+    state.key === key ? state.value : readStorageValue(key, initialValue);
+
+  const currentValueRef = useRef(currentValue);
 
   useEffect(() => {
     initialValueRef.current = initialValue;
   }, [initialValue]);
 
   useEffect(() => {
-    storedValueRef.current = storedValue;
-  }, [storedValue]);
-
-  // Đọc lại dữ liệu nếu key thay đổi
-  useEffect(() => {
-    const nextValue = readStorageValue(key, initialValueRef.current);
-    storedValueRef.current = nextValue;
-    setStoredValue(nextValue);
-  }, [key]);
+    currentValueRef.current = currentValue;
+  }, [currentValue]);
 
   const setValue = useCallback(
     (value) => {
       try {
         const valueToStore =
-          typeof value === 'function' ? value(storedValueRef.current) : value;
+          typeof value === 'function' ? value(currentValueRef.current) : value;
 
-        storedValueRef.current = valueToStore;
-        setStoredValue(valueToStore);
+        currentValueRef.current = valueToStore;
+        setState({ key, value: valueToStore });
 
         if (typeof window !== 'undefined') {
           window.localStorage.setItem(key, JSON.stringify(valueToStore));
@@ -77,22 +67,21 @@ export const useLocalStorage = (key, initialValue) => {
           ? initialValueRef.current()
           : initialValueRef.current;
 
-      storedValueRef.current = fallback;
-      setStoredValue(fallback);
+      currentValueRef.current = fallback;
+      setState({ key, value: fallback });
     } catch (error) {
       console.warn(`useLocalStorage: không thể xóa key "${key}"`, error);
     }
   }, [key]);
 
-  // Đồng bộ khi localStorage thay đổi từ tab khác (có cleanup)
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
     const handleStorageChange = (event) => {
       if (event.key !== key) return;
       const syncedValue = readStorageValue(key, initialValueRef.current);
-      storedValueRef.current = syncedValue;
-      setStoredValue(syncedValue);
+      currentValueRef.current = syncedValue;
+      setState({ key, value: syncedValue });
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -101,7 +90,7 @@ export const useLocalStorage = (key, initialValue) => {
     };
   }, [key]);
 
-  return [storedValue, setValue, removeValue];
+  return [currentValue, setValue, removeValue];
 };
 
 export default useLocalStorage;

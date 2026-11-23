@@ -1,12 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const calculateRemainingSeconds = (initialSeconds, targetTimestamp) => {
-  if (typeof targetTimestamp === 'number' && Number.isFinite(targetTimestamp)) {
-    return Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000));
-  }
-  return Math.max(0, Math.floor(Number(initialSeconds) || 0));
-};
-
 const formatSecondsToMMSS = (totalSeconds) => {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(safeSeconds / 60);
@@ -14,116 +7,138 @@ const formatSecondsToMMSS = (totalSeconds) => {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
-/**
- * Custom hook đếm ngược thời gian theo giây bằng setInterval + cleanup clearInterval.
- * Hỗ trợ đếm theo số giây (initialSeconds) hoặc đồng bộ theo mốc hết hạn (targetTimestamp)
- * để giữ nguyên thời gian khi chuyển từ trang Chọn ghế sang trang Thanh toán.
- *
- * @param {number} [initialSeconds=300] - Số giây đếm ngược mặc định (300s = 05:00)
- * @param {object} [options]
- * @param {number | null} [options.targetTimestamp=null] - Timestamp (ms) thời điểm hết hạn
- * @param {boolean} [options.autoStart=true] - Tự chạy ngay khi mount
- * @param {() => void} [options.onExpire] - Callback gọi đúng 1 lần khi về 00:00
- */
 export const useCountdown = (initialSeconds = 300, options = {}) => {
   const { targetTimestamp = null, autoStart = true, onExpire } = options;
+  const hasTarget =
+    typeof targetTimestamp === 'number' && Number.isFinite(targetTimestamp);
 
-  const [secondsLeft, setSecondsLeft] = useState(() =>
-    calculateRemainingSeconds(initialSeconds, targetTimestamp)
-  );
-  const [isRunning, setIsRunning] = useState(
-    () =>
-      autoStart &&
-      calculateRemainingSeconds(initialSeconds, targetTimestamp) > 0
-  );
+  const [timerState, setTimerState] = useState(() => {
+    const safeInitial = Math.max(0, Math.floor(Number(initialSeconds) || 0));
+    return {
+      secondsLeft: safeInitial,
+      isRunning: !hasTarget && Boolean(autoStart && safeInitial > 0),
+      hasInitialized: !hasTarget,
+    };
+  });
 
   const onExpireRef = useRef(onExpire);
   const hasExpiredRef = useRef(false);
+  const hasCountedRef = useRef(false);
 
   useEffect(() => {
     onExpireRef.current = onExpire;
   }, [onExpire]);
 
-  // Đồng bộ lại đồng hồ khi targetTimestamp thay đổi (ví dụ tạo phiên giữ ghế mới trong Redux)
+  // Đồng bộ theo mốc hết hạn (targetTimestamp) qua callback bất đồng bộ
   useEffect(() => {
-    if (typeof targetTimestamp === 'number' && Number.isFinite(targetTimestamp)) {
-      const remaining = calculateRemainingSeconds(initialSeconds, targetTimestamp);
-      setSecondsLeft(remaining);
-      hasExpiredRef.current = remaining <= 0;
-      setIsRunning(autoStart && remaining > 0);
-    }
-  }, [targetTimestamp, initialSeconds, autoStart]);
+    if (!hasTarget) return undefined;
 
-  // Chạy setInterval đếm ngược theo từng giây và luôn dọn dẹp bằng clearInterval
+    const syncId = window.setTimeout(() => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((targetTimestamp - Date.now()) / 1000)
+      );
+      hasExpiredRef.current = false;
+      hasCountedRef.current = remaining > 0;
+      setTimerState({
+        secondsLeft: remaining,
+        isRunning: Boolean(autoStart && remaining > 0),
+        hasInitialized: true,
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(syncId);
+    };
+  }, [hasTarget, targetTimestamp, autoStart]);
+
+  // Đếm ngược từng giây bằng setInterval + cleanup clearInterval
   useEffect(() => {
-    if (!isRunning) return undefined;
+    if (!timerState.isRunning) return undefined;
 
-    const timerId = window.setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (
-          typeof targetTimestamp === 'number' &&
-          Number.isFinite(targetTimestamp)
-        ) {
-          return Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000));
-        }
-        return Math.max(0, prev - 1);
+    const intervalId = window.setInterval(() => {
+      setTimerState((prev) => {
+        const nextSeconds = hasTarget
+          ? Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000))
+          : Math.max(0, prev.secondsLeft - 1);
+
+        return {
+          secondsLeft: nextSeconds,
+          isRunning: nextSeconds > 0,
+          hasInitialized: true,
+        };
       });
     }, 1000);
 
     return () => {
-      window.clearInterval(timerId);
+      window.clearInterval(intervalId);
     };
-  }, [isRunning, targetTimestamp]);
+  }, [timerState.isRunning, hasTarget, targetTimestamp]);
 
-  // Gọi callback onExpire an toàn sau khi render commit khi đồng hồ chạm 00:00
+  // Kích hoạt callback onExpire đúng 1 lần khi chạm 00:00
   useEffect(() => {
-    if (secondsLeft <= 0 && isRunning) {
-      setIsRunning(false);
-      if (!hasExpiredRef.current) {
-        hasExpiredRef.current = true;
-        if (typeof onExpireRef.current === 'function') {
-          onExpireRef.current();
-        }
+    if (!timerState.hasInitialized) return;
+
+    if (timerState.secondsLeft > 0) {
+      hasCountedRef.current = true;
+      hasExpiredRef.current = false;
+      return;
+    }
+
+    if (
+      timerState.secondsLeft <= 0 &&
+      (hasCountedRef.current || hasTarget) &&
+      !hasExpiredRef.current
+    ) {
+      hasExpiredRef.current = true;
+      if (typeof onExpireRef.current === 'function') {
+        onExpireRef.current();
       }
     }
-  }, [secondsLeft, isRunning]);
+  }, [timerState.secondsLeft, timerState.hasInitialized, hasTarget]);
 
   const resetTimer = useCallback(
     (customSeconds) => {
       const nextSeconds =
         typeof customSeconds === 'number'
           ? Math.max(0, Math.floor(customSeconds))
-          : calculateRemainingSeconds(initialSeconds, targetTimestamp);
+          : hasTarget
+            ? Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000))
+            : Math.max(0, Math.floor(Number(initialSeconds) || 0));
 
       hasExpiredRef.current = false;
-      setSecondsLeft(nextSeconds);
-      setIsRunning(autoStart && nextSeconds > 0);
+      hasCountedRef.current = nextSeconds > 0;
+      setTimerState({
+        secondsLeft: nextSeconds,
+        isRunning: Boolean(autoStart && nextSeconds > 0),
+        hasInitialized: true,
+      });
     },
-    [initialSeconds, targetTimestamp, autoStart]
+    [initialSeconds, hasTarget, targetTimestamp, autoStart]
   );
 
   const startTimer = useCallback(() => {
-    setSecondsLeft((prev) => {
-      if (prev > 0) {
-        hasExpiredRef.current = false;
-        setIsRunning(true);
-      }
-      return prev;
+    setTimerState((prev) => {
+      if (prev.secondsLeft <= 0) return prev;
+      hasExpiredRef.current = false;
+      return { ...prev, isRunning: true };
     });
   }, []);
 
   const pauseTimer = useCallback(() => {
-    setIsRunning(false);
+    setTimerState((prev) =>
+      prev.isRunning ? { ...prev, isRunning: false } : prev
+    );
   }, []);
 
-  const isExpired = secondsLeft <= 0;
-  const formattedTime = formatSecondsToMMSS(secondsLeft);
+  const isExpired = timerState.hasInitialized && timerState.secondsLeft <= 0;
+  const formattedTime = formatSecondsToMMSS(timerState.secondsLeft);
 
   return {
-    secondsLeft,
+    secondsLeft: timerState.secondsLeft,
     formattedTime,
     isExpired,
-    isRunning,
+    isRunning: timerState.isRunning,
     resetTimer,
     startTimer,
     pauseTimer,
