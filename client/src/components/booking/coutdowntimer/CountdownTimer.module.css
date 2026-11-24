@@ -86,7 +86,7 @@
   letter-spacing: 0.03em;
 }
 
-/* Cảnh báo khi còn <= 60 giây */
+/* Hiệu ứng cảnh báo khi còn dưới 1 phút */
 .urgent {
   border-color: var(--color-primary);
   background-color: var(--color-primary-light);
