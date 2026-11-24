@@ -1,6 +1,7 @@
 import { CreditCard, Store, Wallet } from 'lucide-react';
 import styles from './PaymentMethodSelector.module.css';
 
+// Danh sách 3 phương thức thanh toán giả lập của hệ thống
 // eslint-disable-next-line react-refresh/only-export-components
 export const PAYMENT_METHODS = [
   {
@@ -8,7 +9,6 @@ export const PAYMENT_METHODS = [
     name: 'Ví điện tử MoMo',
     description:
       'Quét mã QR qua ứng dụng MoMo để thanh toán tức thì, bảo mật và hưởng hoàn tiền trực tiếp vào tài khoản.',
-    badgeText: 'M',
     iconType: 'momo',
   },
   {
@@ -27,36 +27,40 @@ export const PAYMENT_METHODS = [
   },
 ];
 
+// Hàm phụ: hiển thị biểu tượng tương ứng cho từng phương thức thanh toán
 const renderMethodIcon = (iconType, isSelected) => {
   if (iconType === 'momo') {
     return (
-      <span className={`${styles.iconBox} ${styles.momoBadge}`} aria-hidden="true">
+      <span
+        className={`${styles.iconBox} ${styles.momoBadge}`}
+        aria-hidden="true"
+      >
         M
       </span>
     );
   }
 
+  let boxClassName = styles.iconBox;
+  if (isSelected) {
+    boxClassName = `${styles.iconBox} ${styles.iconActive}`;
+  }
+
   if (iconType === 'card') {
     return (
-      <span
-        className={`${styles.iconBox} ${isSelected ? styles.iconActive : ''}`}
-        aria-hidden="true"
-      >
+      <span className={boxClassName} aria-hidden="true">
         <CreditCard size={18} />
       </span>
     );
   }
 
   return (
-    <span
-      className={`${styles.iconBox} ${isSelected ? styles.iconActive : ''}`}
-      aria-hidden="true"
-    >
+    <span className={boxClassName} aria-hidden="true">
       <Store size={18} />
     </span>
   );
 };
 
+// Component cho phép người dùng chọn 1 trong 3 hình thức thanh toán
 const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
   return (
     <section className={styles.card} aria-labelledby="payment-method-heading">
@@ -70,16 +74,24 @@ const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
         <span className={styles.helperText}>Chọn 1 phương thức</span>
       </div>
 
-      <div className={styles.optionsList} role="radiogroup" aria-label="Phương thức thanh toán">
+      <div
+        className={styles.optionsList}
+        role="radiogroup"
+        aria-label="Phương thức thanh toán"
+      >
         {PAYMENT_METHODS.map((method) => {
           const isSelected = selectedMethod === method.id;
+
+          let cardClassName = styles.optionCard;
+          let radioClassName = styles.radioVisual;
+
+          if (isSelected) {
+            cardClassName = `${styles.optionCard} ${styles.optionCardSelected}`;
+            radioClassName = `${styles.radioVisual} ${styles.radioVisualSelected}`;
+          }
+
           return (
-            <label
-              key={method.id}
-              className={`${styles.optionCard} ${
-                isSelected ? styles.optionCardSelected : ''
-              }`}
-            >
+            <label key={method.id} className={cardClassName}>
               <input
                 type="radio"
                 name="paymentMethod"
@@ -89,12 +101,7 @@ const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
                 className={styles.radioInput}
               />
 
-              <span
-                className={`${styles.radioVisual} ${
-                  isSelected ? styles.radioVisualSelected : ''
-                }`}
-                aria-hidden="true"
-              >
+              <span className={radioClassName} aria-hidden="true">
                 {isSelected && <span className={styles.radioDot} />}
               </span>
 

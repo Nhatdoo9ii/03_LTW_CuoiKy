@@ -168,7 +168,9 @@
   font-family: 'Plus Jakarta Sans', inherit;
   font-size: 0.88rem;
   font-weight: 600;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
 }
 
 .fieldInput:focus {
@@ -217,7 +219,9 @@
   border-radius: 14px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-subtle);
-  transition: border-color 0.16s ease, background-color 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
 }
 
 .comboItemActive {
@@ -264,7 +268,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .qtyBtn {
@@ -695,7 +701,10 @@
   gap: 8px;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(225, 29, 72, 0.28);
-  transition: background-color 0.16s ease, transform 0.14s ease, opacity 0.16s ease;
+  transition:
+    background-color 0.16s ease,
+    transform 0.14s ease,
+    opacity 0.16s ease;
 }
 
 .submitBtn:hover:not(:disabled) {
