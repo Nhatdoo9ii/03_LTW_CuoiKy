@@ -1,96 +1,61 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState } from 'react';
 
-const readStorageValue = (key, initialValue) => {
-  const fallback =
-    typeof initialValue === 'function' ? initialValue() : initialValue;
-
-  if (typeof window === 'undefined') {
-    return fallback;
-  }
-
+// Hàm phụ: đọc dữ liệu ban đầu từ localStorage
+const readFromStorage = (key, initialValue) => {
   try {
-    const rawItem = window.localStorage.getItem(key);
-    return rawItem !== null ? JSON.parse(rawItem) : fallback;
+    const savedText = localStorage.getItem(key);
+
+    if (savedText !== null) {
+      return JSON.parse(savedText);
+    }
+    if (typeof initialValue === 'function') {
+      return initialValue();
+    }
+    return initialValue;
   } catch (error) {
-    console.warn(`useLocalStorage: không thể đọc key "${key}"`, error);
-    return fallback;
+    console.warn('Không thể đọc dữ liệu từ localStorage:', error);
+    return initialValue;
   }
 };
 
+// Custom hook đồng bộ state React với localStorage
 export const useLocalStorage = (key, initialValue) => {
-  const initialValueRef = useRef(initialValue);
+  const [storedValue, setStoredValue] = useState(() => {
+    return readFromStorage(key, initialValue);
+  });
 
-  const [state, setState] = useState(() => ({
-    key,
-    value: readStorageValue(key, initialValue),
-  }));
-
-  const currentValue =
-    state.key === key ? state.value : readStorageValue(key, initialValue);
-
-  const currentValueRef = useRef(currentValue);
-
-  useEffect(() => {
-    initialValueRef.current = initialValue;
-  }, [initialValue]);
-
-  useEffect(() => {
-    currentValueRef.current = currentValue;
-  }, [currentValue]);
-
-  const setValue = useCallback(
-    (value) => {
-      try {
-        const valueToStore =
-          typeof value === 'function' ? value(currentValueRef.current) : value;
-
-        currentValueRef.current = valueToStore;
-        setState({ key, value: valueToStore });
-
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        }
-      } catch (error) {
-        console.warn(`useLocalStorage: không thể ghi key "${key}"`, error);
-      }
-    },
-    [key]
-  );
-
-  const removeValue = useCallback(() => {
+  // Hàm cập nhật cả state React lẫn localStorage
+  const setValue = (newValue) => {
     try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem(key);
+      let valueToSave = newValue;
+
+      if (typeof newValue === 'function') {
+        valueToSave = newValue(storedValue);
       }
-      const fallback =
-        typeof initialValueRef.current === 'function'
-          ? initialValueRef.current()
-          : initialValueRef.current;
 
-      currentValueRef.current = fallback;
-      setState({ key, value: fallback });
+      setStoredValue(valueToSave);
+      localStorage.setItem(key, JSON.stringify(valueToSave));
     } catch (error) {
-      console.warn(`useLocalStorage: không thể xóa key "${key}"`, error);
+      console.warn('Không thể lưu dữ liệu vào localStorage:', error);
     }
-  }, [key]);
+  };
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
+  // Hàm xóa dữ liệu khỏi localStorage và đưa state về giá trị mặc định
+  const removeValue = () => {
+    try {
+      localStorage.removeItem(key);
 
-    const handleStorageChange = (event) => {
-      if (event.key !== key) return;
-      const syncedValue = readStorageValue(key, initialValueRef.current);
-      currentValueRef.current = syncedValue;
-      setState({ key, value: syncedValue });
-    };
+      if (typeof initialValue === 'function') {
+        setStoredValue(initialValue());
+      } else {
+        setStoredValue(initialValue);
+      }
+    } catch (error) {
+      console.warn('Không thể xóa dữ liệu trong localStorage:', error);
+    }
+  };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [key]);
-
-  return [currentValue, setValue, removeValue];
+  return [storedValue, setValue, removeValue];
 };
 
 export default useLocalStorage;

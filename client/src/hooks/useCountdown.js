@@ -1,144 +1,131 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-const formatSecondsToMMSS = (totalSeconds) => {
-  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(safeSeconds / 60);
-  const seconds = safeSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+// Hàm phụ: tính số giây còn lại từ initialSeconds hoặc mốc thời gian targetTimestamp
+const getRemainingSeconds = (initialSeconds, targetTimestamp) => {
+  if (targetTimestamp) {
+    const diffMs = targetTimestamp - Date.now();
+    const diffSeconds = Math.ceil(diffMs / 1000);
+
+    if (diffSeconds > 0) {
+      return diffSeconds;
+    }
+    return 0;
+  }
+
+  if (initialSeconds > 0) {
+    return Math.floor(initialSeconds);
+  }
+  return 0;
 };
 
+// Hàm phụ: đổi tổng số giây (VD: 300) sang chuỗi "05:00"
+const formatTime = (totalSeconds) => {
+  let safeSeconds = totalSeconds;
+  if (safeSeconds < 0) {
+    safeSeconds = 0;
+  }
+
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+
+  let minuteText = String(minutes);
+  if (minutes < 10) {
+    minuteText = '0' + minuteText;
+  }
+
+  let secondText = String(seconds);
+  if (seconds < 10) {
+    secondText = '0' + secondText;
+  }
+
+  return `${minuteText}:${secondText}`;
+};
+
+// Custom hook đếm ngược thời gian giữ ghế (mặc định 300 giây = 5 phút)
 export const useCountdown = (initialSeconds = 300, options = {}) => {
-  const { targetTimestamp = null, autoStart = true, onExpire } = options;
-  const hasTarget =
-    typeof targetTimestamp === 'number' && Number.isFinite(targetTimestamp);
-
-  const [timerState, setTimerState] = useState(() => {
-    const safeInitial = Math.max(0, Math.floor(Number(initialSeconds) || 0));
-    return {
-      secondsLeft: safeInitial,
-      isRunning: !hasTarget && Boolean(autoStart && safeInitial > 0),
-      hasInitialized: !hasTarget,
-    };
+  const targetTimestamp = options.targetTimestamp || null;
+  const autoStart = options.autoStart !== undefined ? options.autoStart : true;
+  const onExpire = options.onExpire || null;
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    return getRemainingSeconds(initialSeconds, targetTimestamp);
   });
-
+  const [isRunning, setIsRunning] = useState(autoStart);
   const onExpireRef = useRef(onExpire);
   const hasExpiredRef = useRef(false);
-  const hasCountedRef = useRef(false);
 
   useEffect(() => {
     onExpireRef.current = onExpire;
   }, [onExpire]);
 
-  // Đồng bộ theo mốc hết hạn (targetTimestamp) qua callback bất đồng bộ
+  const isExpired = secondsLeft <= 0;
+
+  // Chạy setInterval đếm ngược mỗi 1 giây và dọn dẹp bằng clearInterval
   useEffect(() => {
-    if (!hasTarget) return undefined;
 
-    const syncId = window.setTimeout(() => {
-      const remaining = Math.max(
-        0,
-        Math.ceil((targetTimestamp - Date.now()) / 1000)
-      );
-      hasExpiredRef.current = false;
-      hasCountedRef.current = remaining > 0;
-      setTimerState({
-        secondsLeft: remaining,
-        isRunning: Boolean(autoStart && remaining > 0),
-        hasInitialized: true,
-      });
-    }, 0);
-
-    return () => {
-      window.clearTimeout(syncId);
-    };
-  }, [hasTarget, targetTimestamp, autoStart]);
-
-  // Đếm ngược từng giây bằng setInterval + cleanup clearInterval
-  useEffect(() => {
-    if (!timerState.isRunning) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      setTimerState((prev) => {
-        const nextSeconds = hasTarget
-          ? Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000))
-          : Math.max(0, prev.secondsLeft - 1);
-
-        return {
-          secondsLeft: nextSeconds,
-          isRunning: nextSeconds > 0,
-          hasInitialized: true,
-        };
-      });
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [timerState.isRunning, hasTarget, targetTimestamp]);
-
-  // Kích hoạt callback onExpire đúng 1 lần khi chạm 00:00
-  useEffect(() => {
-    if (!timerState.hasInitialized) return;
-
-    if (timerState.secondsLeft > 0) {
-      hasCountedRef.current = true;
-      hasExpiredRef.current = false;
+    if (!isRunning || isExpired) {
       return;
     }
 
-    if (
-      timerState.secondsLeft <= 0 &&
-      (hasCountedRef.current || hasTarget) &&
-      !hasExpiredRef.current
-    ) {
+    const timerId = setInterval(() => {
+      if (targetTimestamp) {
+        const remaining = getRemainingSeconds(initialSeconds, targetTimestamp);
+        setSecondsLeft(remaining);
+      } else {
+        setSecondsLeft((prevSeconds) => {
+          if (prevSeconds <= 1) {
+            return 0;
+          }
+          return prevSeconds - 1;
+        });
+      }
+    }, 1000);
+
+    // Cleanup: hủy bộ đếm khi component bị gỡ khỏi màn hình để tránh rò rỉ bộ nhớ
+    return () => {
+      clearInterval(timerId);
+    };
+  }, [isRunning, isExpired, initialSeconds, targetTimestamp]);
+
+  // Khi đồng hồ về 00:00 thì gọi hàm onExpire đúng 1 lần
+  useEffect(() => {
+    if (isExpired && !hasExpiredRef.current) {
       hasExpiredRef.current = true;
-      if (typeof onExpireRef.current === 'function') {
+      if (onExpireRef.current) {
         onExpireRef.current();
       }
     }
-  }, [timerState.secondsLeft, timerState.hasInitialized, hasTarget]);
+  }, [isExpired]);
 
-  const resetTimer = useCallback(
-    (customSeconds) => {
-      const nextSeconds =
-        typeof customSeconds === 'number'
-          ? Math.max(0, Math.floor(customSeconds))
-          : hasTarget
-            ? Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000))
-            : Math.max(0, Math.floor(Number(initialSeconds) || 0));
+  // Đặt lại đồng hồ về số giây mới (hoặc giá trị ban đầu)
+  const resetTimer = (customSeconds) => {
+    let nextSeconds = getRemainingSeconds(initialSeconds, targetTimestamp);
+    if (typeof customSeconds === 'number') {
+      nextSeconds = Math.max(0, Math.floor(customSeconds));
+    }
 
+    hasExpiredRef.current = false;
+    setSecondsLeft(nextSeconds);
+    setIsRunning(autoStart);
+  };
+
+  // Tiếp tục chạy đồng hồ
+  const startTimer = () => {
+    if (secondsLeft > 0) {
       hasExpiredRef.current = false;
-      hasCountedRef.current = nextSeconds > 0;
-      setTimerState({
-        secondsLeft: nextSeconds,
-        isRunning: Boolean(autoStart && nextSeconds > 0),
-        hasInitialized: true,
-      });
-    },
-    [initialSeconds, hasTarget, targetTimestamp, autoStart]
-  );
+      setIsRunning(true);
+    }
+  };
 
-  const startTimer = useCallback(() => {
-    setTimerState((prev) => {
-      if (prev.secondsLeft <= 0) return prev;
-      hasExpiredRef.current = false;
-      return { ...prev, isRunning: true };
-    });
-  }, []);
-
-  const pauseTimer = useCallback(() => {
-    setTimerState((prev) =>
-      prev.isRunning ? { ...prev, isRunning: false } : prev
-    );
-  }, []);
-
-  const isExpired = timerState.hasInitialized && timerState.secondsLeft <= 0;
-  const formattedTime = formatSecondsToMMSS(timerState.secondsLeft);
+  // Tạm dừng đồng hồ
+  const pauseTimer = () => {
+    setIsRunning(false);
+  };
 
   return {
-    secondsLeft: timerState.secondsLeft,
-    formattedTime,
+    secondsLeft,
+    formattedTime: formatTime(secondsLeft),
     isExpired,
-    isRunning: timerState.isRunning,
+    isRunning: isRunning && !isExpired,
     resetTimer,
     startTimer,
     pauseTimer,
