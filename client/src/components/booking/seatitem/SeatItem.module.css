@@ -76,7 +76,7 @@
   outline-offset: 2px;
 }
 
-/* Dark Mode tương thích với html[data-theme='dark'] trong index.css */
+/* Chế độ tối (Dark Mode) theo html[data-theme='dark'] trong index.css */
 :global(html[data-theme='dark']) .standard {
   background-color: #1e293b;
   border-color: #334155;

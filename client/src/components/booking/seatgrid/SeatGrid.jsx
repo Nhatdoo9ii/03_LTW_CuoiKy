@@ -1,8 +1,67 @@
-import { useMemo } from 'react';
 import { Check, DoorOpen, Star, Video, X } from 'lucide-react';
-import SeatItem from '../seatitem/SeatItem';
+import SeatItem from './SeatItem';
 import styles from './SeatGrid.module.css';
 
+// Hàm phụ: chuyển mảng ghế (dạng chuỗi hoặc object) sang mảng mã chữ in hoa (VD: ['F5', 'F6'])
+const getUpperCaseCodes = (list) => {
+  if (!Array.isArray(list)) {
+    return [];
+  }
+
+  return list.map((item) => {
+    if (typeof item === 'string') {
+      return item.toUpperCase();
+    }
+    if (item && item.code) {
+      return String(item.code).toUpperCase();
+    }
+    return '';
+  });
+};
+
+// Hàm phụ: tự động sinh danh sách các hàng ghế từ số hàng, số cột và danh sách hàng VIP
+const buildSeatRows = (totalRows, seatsPerRow, vipRowList, basePrice, vipPrice) => {
+  const aisleIndex = Math.ceil(seatsPerRow / 2);
+  let rows = [];
+
+  for (let rowIndex = 0; rowIndex < totalRows; rowIndex += 1) {
+    const rowLabel = String.fromCharCode(65 + rowIndex);
+    const isVipRow = vipRowList.includes(rowLabel);
+
+    let seatType = 'standard';
+    let seatPrice = basePrice;
+    if (isVipRow) {
+      seatType = 'vip';
+      seatPrice = vipPrice;
+    }
+
+    let seatsInRow = [];
+    for (let colIndex = 0; colIndex < seatsPerRow; colIndex += 1) {
+      const colNumber = colIndex + 1;
+      const newSeat = {
+        code: `${rowLabel}${colNumber}`,
+        rowLabel,
+        colNumber,
+        type: seatType,
+        price: seatPrice,
+      };
+      seatsInRow = [...seatsInRow, newSeat];
+    }
+
+    const rowData = {
+      rowLabel,
+      isVipRow,
+      leftSeats: seatsInRow.slice(0, aisleIndex),
+      rightSeats: seatsInRow.slice(aisleIndex),
+    };
+
+    rows = [...rows, rowData];
+  }
+
+  return rows;
+};
+
+// Component sơ đồ ghế sinh động theo cấu hình từng phòng chiếu
 const SeatGrid = ({
   room,
   bookedSeats = [],
@@ -11,65 +70,6 @@ const SeatGrid = ({
   vipPrice = 100000,
   onToggleSeat,
 }) => {
-  const totalRows = room?.rows ?? room?.totalRows ?? 8;
-  const seatsPerRow = room?.cols ?? room?.seatsPerRow ?? 10;
-  const aisleIndex = Math.ceil(seatsPerRow / 2);
-
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const vipRowSet = useMemo(() => {
-    const rawVipRows = Array.isArray(room?.vipRows) ? room.vipRows : [];
-    return new Set(rawVipRows.map((label) => String(label).toUpperCase()));
-  }, [room?.vipRows]);
-
-  const bookedSet = useMemo(
-    () => new Set(bookedSeats.map((code) => String(code).toUpperCase())),
-    [bookedSeats]
-  );
-
-  const selectedSet = useMemo(
-    () =>
-      new Set(
-        selectedSeats.map((seat) =>
-          String(typeof seat === 'string' ? seat : seat.code).toUpperCase()
-        )
-      ),
-    [selectedSeats]
-  );
-
-  const seatRows = useMemo(() => {
-    return Array.from({ length: totalRows }, (_, rowIndex) => {
-      const rowLabel = String.fromCharCode(65 + rowIndex);
-      const isVipRow = vipRowSet.has(rowLabel);
-      const seatType = isVipRow ? 'vip' : 'standard';
-      const seatPrice = isVipRow ? vipPrice : basePrice;
-
-      const seats = Array.from({ length: seatsPerRow }, (_, colIndex) => {
-        const colNumber = colIndex + 1;
-        return {
-          code: `${rowLabel}${colNumber}`,
-          rowLabel,
-          colNumber,
-          type: seatType,
-          price: seatPrice,
-        };
-      });
-
-      return {
-        rowLabel,
-        isVipRow,
-        leftSeats: seats.slice(0, aisleIndex),
-        rightSeats: seats.slice(aisleIndex),
-      };
-    });
-  }, [totalRows, seatsPerRow, aisleIndex, vipRowSet, basePrice, vipPrice]);
-
-  const selectedLabelsText = useMemo(() => {
-    if (selectedSeats.length === 0) return 'Chưa chọn';
-    return selectedSeats
-      .map((seat) => (typeof seat === 'string' ? seat : seat.code))
-      .join(', ');
-  }, [selectedSeats]);
-
   if (!room) {
     return (
       <section className={styles.gridCard}>
@@ -80,12 +80,44 @@ const SeatGrid = ({
     );
   }
 
+  let totalRows = 8;
+  if (room.rows) {
+    totalRows = room.rows;
+  } else if (room.totalRows) {
+    totalRows = room.totalRows;
+  }
+
+  let seatsPerRow = 10;
+  if (room.cols) {
+    seatsPerRow = room.cols;
+  } else if (room.seatsPerRow) {
+    seatsPerRow = room.seatsPerRow;
+  }
+
+  // Bước 2: Chuẩn hóa các danh sách mã ghế sang chữ in hoa để so sánh bằng .includes()
+  const vipRowList = getUpperCaseCodes(room.vipRows);
+  const bookedCodeList = getUpperCaseCodes(bookedSeats);
+  const selectedCodeList = getUpperCaseCodes(selectedSeats);
+
+  // Bước 3: Sinh danh sách hàng ghế cho phòng chiếu hiện tại
+  const seatRows = buildSeatRows(
+    totalRows,
+    seatsPerRow,
+    vipRowList,
+    basePrice,
+    vipPrice
+  );
+
+  // Chuỗi hiển thị nhanh các ghế đang chọn ở thanh chú thích phía dưới
+  let selectedLabelsText = 'Chưa chọn';
+  if (selectedCodeList.length > 0) {
+    selectedLabelsText = selectedCodeList.join(', ');
+  }
+
+  const roomName = room.name || 'phòng chiếu';
+
   return (
-    <section
-      className={styles.gridCard}
-      aria-label={`Sơ đồ ghế ${room.name || 'phòng chiếu'}`}
-    >
-      {/* Màn hình cong & lối ra */}
+    <section className={styles.gridCard} aria-label={`Sơ đồ ghế ${roomName}`}>
       <div className={styles.screenArea}>
         <div className={styles.screenCurve} aria-hidden="true" />
         <div className={styles.screenLabel}>
@@ -105,59 +137,55 @@ const SeatGrid = ({
         </div>
       </div>
 
-      {/* Sơ đồ hàng ghế sinh tự động */}
       <div className={styles.matrixScroll}>
         <div className={styles.matrixWrapper}>
-          {seatRows.map((row) => (
-            <div key={row.rowLabel} className={styles.seatRow}>
-              <span
-                className={`${styles.rowLabel} ${
-                  row.isVipRow ? styles.rowLabelVip : ''
-                }`}
-              >
-                {row.rowLabel}
-              </span>
+          {seatRows.map((row) => {
+            let rowLabelClass = styles.rowLabel;
+            if (row.isVipRow) {
+              rowLabelClass = `${styles.rowLabel} ${styles.rowLabelVip}`;
+            }
 
-              <div className={styles.seatBlock}>
-                {row.leftSeats.map((seat) => (
-                  <SeatItem
-                    key={seat.code}
-                    seat={seat}
-                    isBooked={bookedSet.has(seat.code)}
-                    isSelected={selectedSet.has(seat.code)}
-                    onToggle={onToggleSeat}
-                  />
-                ))}
+            return (
+              <div key={row.rowLabel} className={styles.seatRow}>
+                <span className={rowLabelClass}>{row.rowLabel}</span>
+                <div className={styles.seatBlock}>
+                  {row.leftSeats.map((seat) => (
+                    <SeatItem
+                      key={seat.code}
+                      seat={seat}
+                      isBooked={bookedCodeList.includes(seat.code)}
+                      isSelected={selectedCodeList.includes(seat.code)}
+                      onToggle={onToggleSeat}
+                    />
+                  ))}
+                </div>
+
+                <span className={styles.aisleMarker} aria-hidden="true" />
+
+                <div className={styles.seatBlock}>
+                  {row.rightSeats.map((seat) => (
+                    <SeatItem
+                      key={seat.code}
+                      seat={seat}
+                      isBooked={bookedCodeList.includes(seat.code)}
+                      isSelected={selectedCodeList.includes(seat.code)}
+                      onToggle={onToggleSeat}
+                    />
+                  ))}
+                </div>
+
+                <span className={rowLabelClass}>{row.rowLabel}</span>
               </div>
-
-              <span className={styles.aisleMarker} aria-hidden="true" />
-
-              <div className={styles.seatBlock}>
-                {row.rightSeats.map((seat) => (
-                  <SeatItem
-                    key={seat.code}
-                    seat={seat}
-                    isBooked={bookedSet.has(seat.code)}
-                    isSelected={selectedSet.has(seat.code)}
-                    onToggle={onToggleSeat}
-                  />
-                ))}
-              </div>
-
-              <span
-                className={`${styles.rowLabel} ${
-                  row.isVipRow ? styles.rowLabelVip : ''
-                }`}
-              >
-                {row.rowLabel}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Chú thích 4 trạng thái ghế */}
-      <div className={styles.legendBar} role="list" aria-label="Chú thích loại ghế">
+      <div
+        className={styles.legendBar}
+        role="list"
+        aria-label="Chú thích loại ghế"
+      >
         <div className={styles.legendItem} role="listitem">
           <span className={`${styles.legendSwatch} ${styles.swatchStandard}`}>
             1
