@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 import MainLayout from './components/common/MainLayout';
 import AdminLayout from './components/common/AdminLayout';
@@ -12,7 +14,7 @@ import NotFoundPage from './pages/public/NotFoundPage';
 import PromotionPage from './pages/public/PromotionPage';
 
 import SeatSelectionPage from './pages/member/seatselection/SeatSelectionPage';
-import CheckoutPage from './pages/member/CheckoutPage';
+import CheckoutPage from './pages/member/checkout/CheckoutPage';
 import BookingSuccessPage from './pages/member/BookingSuccessPage';
 import MyTicketsPage from './pages/member/MyTicketsPage';
 
@@ -23,8 +25,10 @@ import AdminStatsPage from './pages/admin/AdminStatsPage';
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="upcoming" element={<HomePage />} />
@@ -85,6 +89,8 @@ const App = () => {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
+  </AuthProvider>
+</ThemeProvider>
   );
 };
 
