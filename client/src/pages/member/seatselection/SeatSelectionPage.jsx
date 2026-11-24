@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -8,9 +8,10 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import SeatGrid from "../../../components/booking/SeatGrid";
-import CountdownTimer from "../../../components/booking/CountdownTimer";
-import BookingSummary from "../../../components/booking/BookingSummary";
+import { useAuth } from '../../context/AuthContext';
+import SeatGrid from '../../components/booking/SeatGrid';
+import CountdownTimer from '../../components/booking/CountdownTimer';
+import BookingSummary from '../../components/booking/BookingSummary';
 import {
   DEFAULT_PTIT_PROMO,
   MAX_SEATS_PER_BOOKING,
@@ -21,46 +22,61 @@ import {
   selectSeatLimitWarning,
   selectSelectedSeats,
   toggleSeat,
-} from '../../../store/bookingSlice';
-import {
-  getCurrentUser,
-  getShowtimeDetail,
-} from '../../../services/bookingService';
+} from '../../store/bookingSlice';
+import { getShowtimeDetail } from '../../services/bookingService';
 import styles from './SeatSelectionPage.module.css';
 
+// Hàm phụ: kiểm tra tài khoản hiện tại có phải sinh viên/cán bộ PTIT không
 const isPtitStudentUser = (user) => {
-  if (!user) return false;
-  if (user.isStudent) return true;
+  if (!user) {
+    return false;
+  }
+  if (user.isStudent) {
+    return true;
+  }
+
   const email = String(user.email || '').toLowerCase();
-  return email.endsWith('@stu.ptit.edu.vn') || email.endsWith('@ptit.edu.vn');
+  if (email.endsWith('@stu.ptit.edu.vn') || email.endsWith('@ptit.edu.vn')) {
+    return true;
+  }
+  return false;
 };
 
+// Trang chọn ghế ngồi cho một suất chiếu (/booking/:showtimeId)
 const SeatSelectionPage = () => {
   const { showtimeId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+  const { user } = useAuth();
 
+  // Lấy danh sách ghế đang chọn, cảnh báo giới hạn 8 ghế và mã giảm giá từ Redux
   const selectedSeats = useSelector(selectSelectedSeats);
   const seatLimitWarning = useSelector(selectSeatLimitWarning);
   const appliedPromo = useSelector(selectAppliedPromo);
 
-  const [fetchState, setFetchState] = useState({
-    loadedId: null,
-    showtime: null,
-    error: '',
-  });
-  const [reloadNonce, setReloadNonce] = useState(0);
-  const [conflictNotice, setConflictNotice] = useState(
-    () => location.state?.conflictMessage || ''
-  );
+  // Các state cơ bản quản lý dữ liệu suất chiếu và trạng thái tải
+  const [loadedShowtimeId, setLoadedShowtimeId] = useState(null);
+  const [showtimeInfo, setShowtimeInfo] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [reloadCount, setReloadCount] = useState(0);
 
-  const appliedPromoRef = useRef(appliedPromo);
+  // Nhận thông báo trùng ghế 409 nếu bị đẩy ngược lại từ trang Thanh toán
+  const [conflictNotice, setConflictNotice] = useState(() => {
+    if (location.state && location.state.conflictMessage) {
+      return location.state.conflictMessage;
+    }
+    return '';
+  });
+
+  // Dùng useRef để đánh dấu chỉ tự động áp dụng mã PTIT35 đúng 1 lần khi mới vào trang
   const autoAppliedShowtimeRef = useRef(null);
+  const hasAppliedPromoRef = useRef(Boolean(appliedPromo));
 
   useEffect(() => {
-    appliedPromoRef.current = appliedPromo;
+    hasAppliedPromoRef.current = Boolean(appliedPromo);
   }, [appliedPromo]);
+
 
   useEffect(() => {
     let isCancelled = false;
@@ -68,72 +84,91 @@ const SeatSelectionPage = () => {
     const loadShowtimeData = async () => {
       try {
         const detail = await getShowtimeDetail(showtimeId);
-        if (isCancelled) return;
-
-        if (!detail) {
-          setFetchState({
-            loadedId: showtimeId,
-            showtime: null,
-            error: `Không tìm thấy suất chiếu "${showtimeId}". Vui lòng chọn suất chiếu khác.`,
-          });
+        if (isCancelled) {
           return;
         }
 
-        setFetchState({
-          loadedId: showtimeId,
-          showtime: detail,
-          error: '',
-        });
+        if (!detail) {
+          setShowtimeInfo(null);
+          setLoadError(
+            `Không tìm thấy suất chiếu "${showtimeId}". Vui lòng chọn suất chiếu khác.`
+          );
+          setLoadedShowtimeId(showtimeId);
+          return;
+        }
+
+        setShowtimeInfo(detail);
+        setLoadError('');
+        setLoadedShowtimeId(showtimeId);
 
         dispatch(initBookingSession(detail));
 
-        // Tự động áp dụng mã PTIT35 1 lần đầu cho tài khoản sinh viên PTIT
+        // Nếu là sinh viên PTIT và chưa áp mã nào thì tự động áp dụng mã PTIT35
+        const isFirstTimeForShowtime =
+          autoAppliedShowtimeRef.current !== showtimeId;
+
         if (
-          autoAppliedShowtimeRef.current !== showtimeId &&
-          !appliedPromoRef.current &&
-          isPtitStudentUser(getCurrentUser())
+          isFirstTimeForShowtime &&
+          !hasAppliedPromoRef.current &&
+          isPtitStudentUser(user)
         ) {
           autoAppliedShowtimeRef.current = showtimeId;
           dispatch(applyPromoCode(DEFAULT_PTIT_PROMO));
         }
       } catch (error) {
-        if (isCancelled) return;
-        setFetchState({
-          loadedId: showtimeId,
-          showtime: null,
-          error:
-            error?.message || 'Không thể tải dữ liệu suất chiếu. Vui lòng thử lại.',
-        });
+        if (isCancelled) {
+          return;
+        }
+
+        setShowtimeInfo(null);
+        setLoadError(
+          error.message || 'Không thể tải dữ liệu suất chiếu. Vui lòng thử lại.'
+        );
+        setLoadedShowtimeId(showtimeId);
       }
     };
 
     loadShowtimeData();
 
+    // Cleanup: tránh cập nhật state nếu người dùng rời trang khi dữ liệu chưa tải xong
     return () => {
       isCancelled = true;
     };
-  }, [showtimeId, reloadNonce, dispatch]);
+  }, [showtimeId, reloadCount, user, dispatch]);
 
-  const isLoading = fetchState.loadedId !== showtimeId;
-  const showtimeInfo = fetchState.loadedId === showtimeId ? fetchState.showtime : null;
-  const loadError = fetchState.loadedId === showtimeId ? fetchState.error : '';
+  // Nếu mã suất chiếu đã tải khác mã trên URL thì đang ở trạng thái tải dữ liệu
+  const isLoading = loadedShowtimeId !== showtimeId;
 
-  const handleToggleSeat = useCallback(
-    (seat) => {
-      dispatch(toggleSeat(seat));
-    },
-    [dispatch]
-  );
+  // Xử lý chọn hoặc bỏ chọn 1 ghế trên sơ đồ
+  const handleSelectSeat = (seat) => {
+    dispatch(toggleSeat(seat));
+  };
 
-  const handleProceedToCheckout = useCallback(() => {
-    if (selectedSeats.length === 0) return;
+  // Xử lý chuyển sang trang Xác nhận & Thanh toán
+  const handleGoToCheckout = () => {
+    if (selectedSeats.length === 0) {
+      return;
+    }
     navigate('/checkout');
-  }, [selectedSeats.length, navigate]);
+  };
 
-  const handleRefreshSeats = useCallback(() => {
-    setReloadNonce((prev) => prev + 1);
-  }, []);
+  // Xử lý bấm nút "Làm mới ghế" để tải lại danh sách ghế đã bán mới nhất
+  const handleRefreshSeats = () => {
+    setLoadedShowtimeId(null);
+    setReloadCount(reloadCount + 1);
+  };
 
+  // Đóng thông báo trùng ghế 409
+  const handleCloseConflictNotice = () => {
+    setConflictNotice('');
+  };
+
+  // Đóng thông báo cảnh báo chọn quá 8 ghế
+  const handleCloseLimitWarning = () => {
+    dispatch(clearSeatLimitWarning());
+  };
+
+  // Trường hợp 1: Đang tải dữ liệu suất chiếu
   if (isLoading) {
     return (
       <section className={styles.pageWrapper} aria-busy="true">
@@ -147,12 +182,17 @@ const SeatSelectionPage = () => {
     );
   }
 
+  // Trường hợp 2: Lỗi tải hoặc không tìm thấy suất chiếu
   if (loadError || !showtimeInfo) {
     return (
       <section className={styles.pageWrapper}>
         <div className={styles.container}>
           <div className={styles.stateBox}>
-            <AlertCircle size={40} className={styles.errorIcon} aria-hidden="true" />
+            <AlertCircle
+              size={40}
+              className={styles.errorIcon}
+              aria-hidden="true"
+            />
             <h1 className={styles.stateTitle}>Không thể mở sơ đồ ghế</h1>
             <p className={styles.stateText}>
               {loadError || 'Suất chiếu không tồn tại hoặc đã hết hạn.'}
@@ -177,18 +217,28 @@ const SeatSelectionPage = () => {
     );
   }
 
-  const movieId = showtimeInfo.movieId || showtimeInfo.movie?.id;
+  // Trường hợp 3: Đã tải xong dữ liệu -> hiển thị sơ đồ ghế và tóm tắt đơn vé
+  let movieId = '';
+  if (showtimeInfo.movieId) {
+    movieId = showtimeInfo.movieId;
+  } else if (showtimeInfo.movie && showtimeInfo.movie.id) {
+    movieId = showtimeInfo.movie.id;
+  }
+
+  let backToMovieUrl = '/';
+  if (movieId) {
+    backToMovieUrl = `/movies/${movieId}`;
+  }
+
   const room = showtimeInfo.room;
+  const roomName = room && room.name ? room.name : 'Phòng chiếu';
 
   return (
     <section className={styles.pageWrapper}>
       <div className={styles.container}>
-        {/* Thanh quay lại nhanh */}
+        {/* Thanh quay lại trang chi tiết phim và nút làm mới sơ đồ ghế */}
         <div className={styles.topNavBar}>
-          <Link
-            to={movieId ? `/movies/${movieId}` : '/'}
-            className={styles.backLink}
-          >
+          <Link to={backToMovieUrl} className={styles.backLink}>
             <ArrowLeft size={16} aria-hidden="true" />
             <span>Quay lại chọn suất chiếu</span>
           </Link>
@@ -204,15 +254,18 @@ const SeatSelectionPage = () => {
           </button>
         </div>
 
-        {/* Thông báo xung đột 409 (nếu bị đẩy về từ trang Thanh toán) */}
         {conflictNotice && (
           <div className={styles.alertBanner} role="alert">
-            <AlertCircle size={18} className={styles.alertIcon} aria-hidden="true" />
+            <AlertCircle
+              size={18}
+              className={styles.alertIcon}
+              aria-hidden="true"
+            />
             <span className={styles.alertText}>{conflictNotice}</span>
             <button
               type="button"
               className={styles.alertCloseBtn}
-              onClick={() => setConflictNotice('')}
+              onClick={handleCloseConflictNotice}
               aria-label="Đóng thông báo"
             >
               <X size={16} aria-hidden="true" />
@@ -220,15 +273,18 @@ const SeatSelectionPage = () => {
           </div>
         )}
 
-        {/* Thông báo chặn chọn quá 8 ghế */}
         {seatLimitWarning && (
           <div className={styles.alertBanner} role="alert">
-            <AlertCircle size={18} className={styles.alertIcon} aria-hidden="true" />
+            <AlertCircle
+              size={18}
+              className={styles.alertIcon}
+              aria-hidden="true"
+            />
             <span className={styles.alertText}>{seatLimitWarning}</span>
             <button
               type="button"
               className={styles.alertCloseBtn}
-              onClick={() => dispatch(clearSeatLimitWarning())}
+              onClick={handleCloseLimitWarning}
               aria-label="Đóng cảnh báo giới hạn ghế"
             >
               <X size={16} aria-hidden="true" />
@@ -236,10 +292,10 @@ const SeatSelectionPage = () => {
           </div>
         )}
 
-        {/* Bố cục chính 2 cột */}
+
         <div className={styles.bookingLayout}>
           <div className={styles.leftColumn}>
-            {/* Header Chọn ghế + Đồng hồ đếm ngược 05:00 */}
+  
             <header className={styles.headerCard}>
               <div className={styles.headerTitleGroup}>
                 <h1 className={styles.pageTitle}>Chọn ghế ngồi</h1>
@@ -250,8 +306,8 @@ const SeatSelectionPage = () => {
                     aria-hidden="true"
                   />
                   <span>
-                    {room?.name || 'Phòng chiếu'} – PTIT Cinema (Tối đa{' '}
-                    {MAX_SEATS_PER_BOOKING} ghế/lần đặt)
+                    {roomName} – PTIT Cinema (Tối đa {MAX_SEATS_PER_BOOKING}{' '}
+                    ghế/lần đặt)
                   </span>
                 </p>
               </div>
@@ -259,22 +315,22 @@ const SeatSelectionPage = () => {
               <CountdownTimer movieId={movieId} variant="card" />
             </header>
 
-            {/* Sơ đồ ghế sinh động theo phòng */}
+     
             <SeatGrid
               room={room}
               bookedSeats={showtimeInfo.bookedSeats}
               selectedSeats={selectedSeats}
               basePrice={showtimeInfo.basePrice}
               vipPrice={showtimeInfo.vipPrice}
-              onToggleSeat={handleToggleSeat}
+              onToggleSeat={handleSelectSeat}
             />
           </div>
 
-          {/* Cột phải: Tóm tắt đơn đặt vé & mã ưu đãi */}
+
           <div className={styles.rightColumn}>
             <BookingSummary
               showtimeInfo={showtimeInfo}
-              onProceed={handleProceedToCheckout}
+              onProceed={handleGoToCheckout}
             />
           </div>
         </div>
