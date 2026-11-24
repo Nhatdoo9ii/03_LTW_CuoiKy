@@ -1,9 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Các hằng số dùng chung cho luồng đặt vé
 export const MAX_SEATS_PER_BOOKING = 8;
-export const HOLD_DURATION_SECONDS = 5 * 60;
+export const HOLD_DURATION_SECONDS = 300; // 5 phút = 300 giây
 export const HOLD_DURATION_MS = HOLD_DURATION_SECONDS * 1000;
 
+// Mã ưu đãi mặc định dành cho sinh viên PTIT
 export const DEFAULT_PTIT_PROMO = {
   code: 'PTIT35',
   title: 'Đặc quyền Sinh viên PTIT (Giảm 35% vé)',
@@ -16,6 +18,7 @@ export const DEFAULT_PTIT_PROMO = {
   applyScope: 'tickets',
 };
 
+// Danh sách combo bắp nước hiển thị ở trang Thanh toán
 export const AVAILABLE_COMBOS = [
   {
     id: 'combo-ptit-student',
@@ -37,31 +40,34 @@ export const AVAILABLE_COMBOS = [
   },
 ];
 
+// Trạng thái ban đầu của giỏ đặt vé trong Redux
 const initialState = {
-  showtimeInfo: null,
-  selectedSeats: [],
-  selectedCombos: [],
-  appliedPromo: null,
-  holdExpiresAt: null,
-  seatLimitWarning: '',
-  lastCompletedBooking: null,
+  showtimeInfo: null,             // Thông tin suất chiếu đang chọn
+  selectedSeats: [],            // Danh sách ghế đang chọn (tối đa 8 ghế)
+  selectedCombos: [],             // Danh sách combo bắp nước đã chọn
+  appliedPromo: null,             // Mã khuyến mãi đang áp dụng
+  holdExpiresAt: null,            // Mốc thời gian hết hạn giữ ghế (tính bằng ms)
+  seatLimitWarning: '',             // Câu cảnh báo khi người dùng bấm chọn quá 8 ghế
+  lastCompletedBooking: null,             // Lưu đơn vé vừa đặt xong để hiện ở trang Thành công
 };
 
 const bookingSlice = createSlice({
   name: 'booking',
   initialState,
   reducers: {
-    /**
-     * Khởi tạo phiên chọn ghế cho một suất chiếu.
-     * Nếu đổi sang suất chiếu khác, tự động xóa ghế cũ và tạo mốc giữ ghế 5 phút mới.
-     */
+    // Khởi tạo phiên chọn ghế khi vào một suất chiếu
     initBookingSession: (state, action) => {
       const nextShowtime = action.payload;
-      if (!nextShowtime) return;
+      if (!nextShowtime) {
+        return;
+      }
 
-      const isSameShowtime =
-        state.showtimeInfo &&
-        String(state.showtimeInfo.id) === String(nextShowtime.id);
+      let isSameShowtime = false;
+      if (state.showtimeInfo) {
+        if (String(state.showtimeInfo.id) === String(nextShowtime.id)) {
+          isSameShowtime = true;
+        }
+      }
 
       state.showtimeInfo = nextShowtime;
       state.seatLimitWarning = '';
@@ -75,22 +81,23 @@ const bookingSlice = createSlice({
       }
     },
 
-    /**
-     * Chọn hoặc bỏ chọn 1 ghế (tối đa 8 ghế/lần đặt).
-     * Payload: { code: 'F5', type: 'vip' | 'standard', price: 100000 }
-     */
+    // Chọn hoặc bỏ chọn 1 ghế trên sơ đồ (giới hạn tối đa 8 ghế)
     toggleSeat: (state, action) => {
       const seat = action.payload;
-      if (!seat || !seat.code) return;
+      if (!seat || !seat.code) {
+        return;
+      }
 
-      const exists = state.selectedSeats.some(
-        (item) => item.code === seat.code
-      );
 
-      if (exists) {
-        state.selectedSeats = state.selectedSeats.filter(
-          (item) => item.code !== seat.code
-        );
+      const existingSeat = state.selectedSeats.find((item) => {
+        return item.code === seat.code;
+      });
+
+
+      if (existingSeat) {
+        state.selectedSeats = state.selectedSeats.filter((item) => {
+          return item.code !== seat.code;
+        });
         state.seatLimitWarning = '';
         return;
       }
@@ -100,96 +107,116 @@ const bookingSlice = createSlice({
         return;
       }
 
+
       state.selectedSeats = [...state.selectedSeats, seat];
       state.seatLimitWarning = '';
 
+    
       if (!state.holdExpiresAt || state.holdExpiresAt <= Date.now()) {
         state.holdExpiresAt = Date.now() + HOLD_DURATION_MS;
       }
     },
 
-    /**
-     * Xóa các ghế bị trùng (khi server trả 409 Conflict) khỏi danh sách đang chọn.
-     */
+    // Xóa các ghế bị trùng khỏi danh sách đang chọn (khi server báo lỗi 409)
     removeConflictSeats: (state, action) => {
-      const conflictCodes = Array.isArray(action.payload) ? action.payload : [];
-      state.selectedSeats = state.selectedSeats.filter(
-        (seat) => !conflictCodes.includes(seat.code)
-      );
+      const conflictCodes = action.payload;
+      if (!Array.isArray(conflictCodes)) {
+        return;
+      }
+
+      state.selectedSeats = state.selectedSeats.filter((seat) => {
+        return !conflictCodes.includes(seat.code);
+      });
       state.seatLimitWarning = '';
     },
 
+    // Tắt thông báo cảnh báo chọn quá 8 ghế
     clearSeatLimitWarning: (state) => {
       state.seatLimitWarning = '';
     },
 
-    /**
-     * Thêm hoặc cập nhật số lượng combo bắp nước (immutable update).
-     * Payload: { combo: { id, name, description, price }, delta: 1 | -1 }
-     */
+    // Tăng (+1) hoặc giảm (-1) số lượng combo bắp nước
     updateComboQuantity: (state, action) => {
-      const { combo, delta } = action.payload || {};
-      if (!combo || !combo.id || typeof delta !== 'number') return;
+      const payload = action.payload;
+      if (!payload || !payload.combo || !payload.combo.id) {
+        return;
+      }
 
-      const existing = state.selectedCombos.find((item) => item.id === combo.id);
+      const combo = payload.combo;
+      const delta = payload.delta;
 
-      if (existing) {
-        const nextQty = existing.quantity + delta;
-        if (nextQty <= 0) {
-          state.selectedCombos = state.selectedCombos.filter(
-            (item) => item.id !== combo.id
-          );
+      const existingCombo = state.selectedCombos.find((item) => {
+        return item.id === combo.id;
+      });
+
+      if (existingCombo) {
+        const nextQuantity = existingCombo.quantity + delta;
+
+        if (nextQuantity <= 0) {
+          state.selectedCombos = state.selectedCombos.filter((item) => {
+            return item.id !== combo.id;
+          });
         } else {
-          state.selectedCombos = state.selectedCombos.map((item) =>
-            item.id === combo.id
-              ? { ...item, quantity: Math.min(nextQty, 10) }
-              : item
-          );
+          let finalQuantity = nextQuantity;
+          if (finalQuantity > 10) {
+            finalQuantity = 10;
+          }
+
+          state.selectedCombos = state.selectedCombos.map((item) => {
+            if (item.id === combo.id) {
+              return { ...item, quantity: finalQuantity };
+            }
+            return item;
+          });
         }
       } else if (delta > 0) {
-        state.selectedCombos = [
-          ...state.selectedCombos,
-          { ...combo, quantity: Math.min(delta, 10) },
-        ];
+        // Nếu chưa có trong giỏ và bấm dấu cộng thì thêm mới vào danh sách
+        const newComboItem = {
+          ...combo,
+          quantity: delta,
+        };
+        state.selectedCombos = [...state.selectedCombos, newComboItem];
       }
     },
 
+    // Xóa toàn bộ combo đã chọn
     clearCombos: (state) => {
       state.selectedCombos = [];
     },
 
-    /**
-     * Áp dụng mã khuyến mãi (hỗ trợ mặc định PTIT35 hoặc object từ API/PromotionPage).
-     */
+    // Áp dụng mã khuyến mãi (nhận chuỗi "PTIT35" hoặc object khuyến mãi)
     applyPromoCode: (state, action) => {
       const payload = action.payload;
-      if (!payload) return;
+      if (!payload) {
+        return;
+      }
 
       if (typeof payload === 'string') {
-        const normalized = payload.trim().toUpperCase();
-        if (normalized === DEFAULT_PTIT_PROMO.code) {
+        const cleanCode = payload.trim().toUpperCase();
+        if (cleanCode === DEFAULT_PTIT_PROMO.code) {
           state.appliedPromo = DEFAULT_PTIT_PROMO;
         }
         return;
       }
 
+      const formattedCode = String(payload.code || '').trim().toUpperCase();
       state.appliedPromo = {
         ...payload,
-        code: String(payload.code || '').trim().toUpperCase(),
+        code: formattedCode,
       };
     },
 
+    // Gỡ mã khuyến mãi đang áp dụng
     removePromoCode: (state) => {
       state.appliedPromo = null;
     },
 
+    // Cấp lại thời gian giữ ghế 5 phút mới
     refreshHoldTimer: (state) => {
       state.holdExpiresAt = Date.now() + HOLD_DURATION_MS;
     },
 
-    /**
-     * Xử lý khi hết 5 phút giữ ghế: xóa ghế, combo và hủy mốc hẹn giờ.
-     */
+    // Xử lý khi hết 5 phút giữ ghế: bỏ hết ghế, combo và hủy hẹn giờ
     expireBookingHold: (state) => {
       state.selectedSeats = [];
       state.selectedCombos = [];
@@ -197,17 +224,20 @@ const bookingSlice = createSlice({
       state.seatLimitWarning = '';
     },
 
-    /**
-     * Lưu đơn đặt vé vừa hoàn tất và dọn dẹp phiên chọn ghế hiện tại.
-     */
+    // Lưu thông tin vé vừa thanh toán thành công và làm sạch giỏ đặt vé
     setLastCompletedBooking: (state, action) => {
-      state.lastCompletedBooking = action.payload || null;
+      if (action.payload) {
+        state.lastCompletedBooking = action.payload;
+      } else {
+        state.lastCompletedBooking = null;
+      }
       state.selectedSeats = [];
       state.selectedCombos = [];
       state.holdExpiresAt = null;
       state.seatLimitWarning = '';
     },
 
+    // Đặt lại toàn bộ state đặt vé về rỗng ban đầu
     resetBookingFlow: (state) => {
       state.showtimeInfo = null;
       state.selectedSeats = [];
@@ -234,22 +264,24 @@ export const {
   resetBookingFlow,
 } = bookingSlice.actions;
 
-// Hàm thuần tính toán tổng tiền (dùng kết hợp với useMemo ở các component UI)
+// Hàm tính tiền vé, tiền combo, tiền giảm giá và tổng thanh toán
 export const calculateBookingAmounts = (
   selectedSeats = [],
   selectedCombos = [],
   appliedPromo = null
 ) => {
-  const ticketSubtotal = selectedSeats.reduce(
-    (sum, seat) => sum + (Number(seat.price) || 0),
-    0
-  );
+  let ticketSubtotal = 0;
+  for (const seat of selectedSeats) {
+    const seatPrice = Number(seat.price) || 0;
+    ticketSubtotal = ticketSubtotal + seatPrice;
+  }
 
-  const comboSubtotal = selectedCombos.reduce(
-    (sum, combo) =>
-      sum + (Number(combo.price) || 0) * (Number(combo.quantity) || 0),
-    0
-  );
+  let comboSubtotal = 0;
+  for (const combo of selectedCombos) {
+    const comboPrice = Number(combo.price) || 0;
+    const comboQuantity = Number(combo.quantity) || 0;
+    comboSubtotal = comboSubtotal + comboPrice * comboQuantity;
+  }
 
   const subtotal = ticketSubtotal + comboSubtotal;
 
@@ -263,8 +295,8 @@ export const calculateBookingAmounts = (
     };
   }
 
-  const minOrder = Number(appliedPromo.minOrderValue) || 0;
-  if (subtotal < minOrder) {
+  const minOrderValue = Number(appliedPromo.minOrderValue) || 0;
+  if (subtotal < minOrderValue) {
     return {
       ticketSubtotal,
       comboSubtotal,
@@ -274,8 +306,10 @@ export const calculateBookingAmounts = (
     };
   }
 
-  const discountBase =
-    appliedPromo.applyScope === 'all' ? subtotal : ticketSubtotal;
+  let discountBase = ticketSubtotal;
+  if (appliedPromo.applyScope === 'all') {
+    discountBase = subtotal;
+  }
 
   // eslint-disable-next-line no-useless-assignment
   let rawDiscount = 0;
@@ -286,15 +320,21 @@ export const calculateBookingAmounts = (
     rawDiscount = Math.round((discountBase * percent) / 100);
   }
 
-  if (
-    typeof appliedPromo.maxDiscount === 'number' &&
-    appliedPromo.maxDiscount > 0
-  ) {
-    rawDiscount = Math.min(rawDiscount, appliedPromo.maxDiscount);
+  if (appliedPromo.maxDiscount && appliedPromo.maxDiscount > 0) {
+    if (rawDiscount > appliedPromo.maxDiscount) {
+      rawDiscount = appliedPromo.maxDiscount;
+    }
   }
 
-  const discountAmount = Math.min(rawDiscount, subtotal);
-  const totalPrice = Math.max(0, subtotal - discountAmount);
+  let discountAmount = rawDiscount;
+  if (discountAmount > subtotal) {
+    discountAmount = subtotal;
+  }
+
+  let totalPrice = subtotal - discountAmount;
+  if (totalPrice < 0) {
+    totalPrice = 0;
+  }
 
   return {
     ticketSubtotal,
@@ -305,7 +345,7 @@ export const calculateBookingAmounts = (
   };
 };
 
-// Selectors
+// Các hàm selector để lấy dữ liệu từ Redux store bằng useSelector()
 export const selectBookingState = (state) => state.booking;
 export const selectShowtimeInfo = (state) => state.booking.showtimeInfo;
 export const selectSelectedSeats = (state) => state.booking.selectedSeats;
