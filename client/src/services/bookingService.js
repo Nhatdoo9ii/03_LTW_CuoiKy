@@ -2,140 +2,249 @@ import axios from 'axios';
 import mockData from '../data/mockData.json';
 import { DEFAULT_PTIT_PROMO } from '../store/bookingSlice';
 
+// Địa chỉ gốc của Backend API
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Dùng chung key với MyTicketsPage.jsx để vé mới đặt hiển thị ngay ở "Vé của tôi"
 export const LOCAL_BOOKINGS_KEY = 'ptit_bookings';
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 4000,
-  headers: {
+// Hàm tạo cấu hình gửi kèm JWT token lên server (nếu người dùng đã đăng nhập)
+const getRequestConfig = () => {
+  const token = localStorage.getItem('token');
+  const headers = {
     'Content-Type': 'application/json',
-  },
-});
+  };
 
-apiClient.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = window.localStorage.getItem('token');
-    if (token) {
-      return {
-        ...config,
-        headers: {
-          ...config.headers,
-          Authorization: `Bearer ${token}`,
-        },
-      };
-    }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
-  return config;
-});
 
-const isServerOfflineError = (error) =>
-  !error?.response ||
-  error.code === 'ERR_NETWORK' ||
-  error.code === 'ECONNABORTED';
+  return {
+    timeout: 4000,
+    headers,
+  };
+};
 
+// Hàm phụ: đọc danh sách vé đã lưu trong localStorage
 const readLocalBookings = () => {
-  if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(LOCAL_BOOKINGS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const savedText = localStorage.getItem(LOCAL_BOOKINGS_KEY);
+    if (!savedText) {
+      return [];
+    }
+
+    const parsedData = JSON.parse(savedText);
+    if (Array.isArray(parsedData)) {
+      return parsedData;
+    }
+    return [];
   } catch (error) {
-    console.warn('bookingService: không thể đọc localStorage bookings', error);
+    console.warn('Không thể đọc danh sách vé từ localStorage:', error);
     return [];
   }
 };
 
-const saveLocalBooking = (booking) => {
-  if (typeof window === 'undefined') return;
+// Hàm phụ: lưu thêm 1 đơn đặt vé mới vào đầu danh sách trong localStorage
+const saveLocalBooking = (newBooking) => {
   try {
-    const existing = readLocalBookings();
-    const deduped = existing.filter((item) => String(item.id) !== String(booking.id));
-    const updated = [booking, ...deduped];
-    window.localStorage.setItem(LOCAL_BOOKINGS_KEY, JSON.stringify(updated));
+    const oldList = readLocalBookings();
+
+    const filteredList = oldList.filter((item) => {
+      return String(item.id) !== String(newBooking.id);
+    });
+
+    const updatedList = [newBooking, ...filteredList];
+    localStorage.setItem(LOCAL_BOOKINGS_KEY, JSON.stringify(updatedList));
   } catch (error) {
-    console.warn('bookingService: không thể lưu booking vào localStorage', error);
+    console.warn('Không thể lưu vé vào localStorage:', error);
   }
 };
 
-const normalizeSeatCodes = (seats = []) =>
-  seats
-    .map((seat) => (typeof seat === 'string' ? seat : seat?.code))
-    .filter(Boolean);
+// Hàm phụ: lấy ra danh sách mã ghế dạng chuỗi (VD: ['F5', 'F6']) từ mảng ghế
+const extractSeatCodes = (seats) => {
+  if (!Array.isArray(seats)) {
+    return [];
+  }
 
-const getFallbackOccupiedSeats = (showtimeId) => {
-  const showtime = mockData.showtimes.find(
-    (item) => String(item.id) === String(showtimeId)
-  );
-  const mockBooked = Array.isArray(showtime?.bookedSeats)
-    ? showtime.bookedSeats
-    : [];
+  const codes = seats.map((seat) => {
+    if (typeof seat === 'string') {
+      return seat;
+    }
+    if (seat && seat.code) {
+      return seat.code;
+    }
+    return '';
+  });
 
-  const localBooked = readLocalBookings()
-    .filter(
-      (booking) =>
-        String(booking.showtimeId) === String(showtimeId) &&
-        booking.status !== 'cancelled'
-    )
-    .flatMap((booking) => normalizeSeatCodes(booking.seats));
-
-  return Array.from(new Set([...mockBooked, ...localBooked]));
+  return codes.filter((code) => code !== '');
 };
 
-const generateBookingIdentifiers = () => {
-  const randomDigits = String(Math.floor(100000 + Math.random() * 900000));
+// Hàm phụ: gom danh sách ghế đã bán từ mockData.json và localStorage khi server chưa chạy
+const getFallbackOccupiedSeats = (showtimeId) => {
+  let occupiedList = [];
+
+  const showtime = mockData.showtimes.find((item) => {
+    return String(item.id) === String(showtimeId);
+  });
+
+  if (showtime && Array.isArray(showtime.bookedSeats)) {
+    for (const seatCode of showtime.bookedSeats) {
+      if (!occupiedList.includes(seatCode)) {
+        occupiedList = [...occupiedList, seatCode];
+      }
+    }
+  }
+
+  const localBookings = readLocalBookings();
+  for (const booking of localBookings) {
+    const isSameShowtime = String(booking.showtimeId) === String(showtimeId);
+    const isNotCancelled = booking.status !== 'cancelled';
+
+    if (isSameShowtime && isNotCancelled) {
+      const seatCodes = extractSeatCodes(booking.seats);
+      for (const code of seatCodes) {
+        if (!occupiedList.includes(code)) {
+          occupiedList = [...occupiedList, code];
+        }
+      }
+    }
+  }
+
+  return occupiedList;
+};
+
+// Hàm phụ: sinh mã đơn hàng và mã đặt vé 6 chữ số ngẫu nhiên
+const createBookingIdentifiers = () => {
+  const randomNumber = Math.floor(100000 + Math.random() * 900000);
+  const shortCode = String(randomNumber);
+
   const now = new Date();
-  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
-    2,
-    '0'
-  )}${String(now.getDate()).padStart(2, '0')}`;
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const datePart = `${year}${month}${day}`;
 
   return {
-    id: `BK-${datePart}-${randomDigits}`,
-    shortCode: randomDigits,
-    bookingCode: `PTIT-${randomDigits}`,
+    id: `BK-${datePart}-${shortCode}`,
+    shortCode,
+    bookingCode: `PTIT-${shortCode}`,
   };
 };
 
-export const getCurrentUser = () => {
-  if (typeof window !== 'undefined') {
-    try {
-      const savedUser = window.localStorage.getItem('user');
-      if (savedUser) {
-        return JSON.parse(savedUser);
-      }
-    } catch (error) {
-      console.warn('bookingService: lỗi đọc thông tin user từ localStorage', error);
-    }
+// Hàm phụ: chuẩn hóa object vé để tương thích cả trang Thành công lẫn trang Vé của tôi
+const buildSavedBooking = (rawData, payload, currentUser) => {
+  const source = rawData || {};
+  const input = payload || {};
+  const user = currentUser || {};
+
+  const seatCodes = extractSeatCodes(source.seats || input.seats);
+
+  // eslint-disable-next-line no-useless-assignment
+  let finalTotal = 0;
+  if (source.totalPrice !== undefined) {
+    finalTotal = Number(source.totalPrice);
+  } else if (source.totalAmount !== undefined) {
+    finalTotal = Number(source.totalAmount);
+  } else {
+    finalTotal = Number(input.totalPrice) || 0;
   }
+
+  const bookingId = source.id || source._id || '';
+  const bookingCode = source.bookingCode || source.orderCode || bookingId;
+
+  let shortCode = source.shortCode || '';
+  if (!shortCode) {
+    const digitsOnly = String(bookingCode).replace(/\D/g, '');
+    shortCode = digitsOnly.slice(-6) || '000000';
+  }
+
+  const showtimeHour = source.startTime || source.time || input.time || '';
+  const seatDetails = Array.isArray(source.seatDetails)
+    ? source.seatDetails
+    : Array.isArray(input.seats)
+      ? input.seats
+      : [];
+  const combos = Array.isArray(source.combos)
+    ? source.combos
+    : Array.isArray(input.combos)
+      ? input.combos
+      : [];
+
+  return {
+    id: bookingId,
+    bookingCode,
+    shortCode,
+    userId: source.userId || input.userId || user.id || 'u1',
+    userName: source.userName || input.customerName || user.fullName || '',
+    userEmail: source.userEmail || input.customerEmail || user.email || '',
+    userPhone: source.userPhone || input.customerPhone || user.phone || '',
+    showtimeId: source.showtimeId || input.showtimeId || '',
+    movieId: source.movieId || input.movieId || '',
+    movieTitle: source.movieTitle || input.movieTitle || '',
+    originalTitle: source.originalTitle || input.originalTitle || '',
+    ageRating: source.ageRating || input.ageRating || 'P',
+    posterUrl: source.posterUrl || input.posterUrl || '',
+    roomId: source.roomId || input.roomId || '',
+    roomName: source.roomName || input.roomName || '',
+    date: source.date || input.date || '',
+    time: showtimeHour,
+    startTime: showtimeHour,
+    seats: seatCodes,
+    seatDetails,
+    combos,
+    promoCode: source.promoCode || input.promoCode || null,
+    subtotal: Number(source.subtotal || input.subtotal) || finalTotal,
+    discountAmount:
+      Number(source.discountAmount || input.discountAmount) || 0,
+    totalPrice: finalTotal,
+    totalAmount: finalTotal,
+    paymentMethod: source.paymentMethod || input.paymentMethod || 'MoMo',
+    status: source.status || 'confirmed',
+    createdAt: source.createdAt || new Date().toISOString(),
+  };
+};
+
+// 1. Lấy thông tin người dùng hiện đang đăng nhập từ localStorage
+export const getCurrentUser = () => {
+  try {
+    const savedUserText = localStorage.getItem('user');
+    if (savedUserText) {
+      return JSON.parse(savedUserText);
+    }
+  } catch (error) {
+    console.warn('Lỗi đọc thông tin người dùng từ localStorage:', error);
+  }
+
   return mockData.users[0] || null;
 };
 
+// 2. Lấy danh sách ghế đã có người đặt của 1 suất chiếu
 export const getOccupiedSeats = async (showtimeId) => {
+  const url = `${API_BASE_URL}/bookings/showtime/${showtimeId}/occupied-seats`;
+
   try {
-    const response = await apiClient.get(
-      `/bookings/showtime/${encodeURIComponent(showtimeId)}/occupied-seats`
-    );
-    const apiSeats = response.data?.occupiedSeats ?? response.data?.data ?? [];
-    return Array.isArray(apiSeats) ? apiSeats : [];
-  } catch (error) {
-    if (!isServerOfflineError(error)) {
-      console.warn(
-        'bookingService: API occupied-seats trả lỗi, chuyển sang dữ liệu cục bộ',
-        error.response?.status
-      );
+    const response = await axios.get(url, getRequestConfig());
+    const data = response.data;
+
+    if (data && Array.isArray(data.occupiedSeats)) {
+      return data.occupiedSeats;
     }
+    if (data && Array.isArray(data.data)) {
+      return data.data;
+    }
+    return [];
+  } catch (error) {
+    // Nếu backend chưa chạy hoặc lỗi mạng thì lấy dữ liệu mẫu cục bộ
+    console.warn('Chuyển sang lấy ghế đã bán từ dữ liệu cục bộ:', error.message);
     return getFallbackOccupiedSeats(showtimeId);
   }
 };
 
+// 3. Lấy đầy đủ thông tin suất chiếu, phim, phòng chiếu và danh sách ghế đã bán
 export const getShowtimeDetail = async (showtimeId) => {
-  const showtime = mockData.showtimes.find(
-    (item) => String(item.id) === String(showtimeId)
-  );
+  const showtime = mockData.showtimes.find((item) => {
+    return String(item.id) === String(showtimeId);
+  });
 
   if (!showtime) {
     return null;
@@ -148,34 +257,39 @@ export const getShowtimeDetail = async (showtimeId) => {
     mockData.rooms.find((item) => String(item.id) === String(showtime.roomId)) ||
     null;
 
-  const room = rawRoom
-    ? {
-        ...rawRoom,
-        rows: rawRoom.rows ?? rawRoom.totalRows ?? 8,
-        cols: rawRoom.cols ?? rawRoom.seatsPerRow ?? 10,
-        vipRows: Array.isArray(rawRoom.vipRows) ? rawRoom.vipRows : [],
-      }
-    : null;
+  let room = null;
+  if (rawRoom) {
+    room = {
+      ...rawRoom,
+      rows: rawRoom.rows || rawRoom.totalRows || 8,
+      cols: rawRoom.cols || rawRoom.seatsPerRow || 10,
+      vipRows: Array.isArray(rawRoom.vipRows) ? rawRoom.vipRows : [],
+    };
+  }
 
+  // Lấy danh sách ghế đã bán mới nhất
   const bookedSeats = await getOccupiedSeats(showtimeId);
+
   const basePrice = Number(showtime.basePrice) || 85000;
   const vipSurcharge = Number(showtime.vipSurcharge) || 15000;
+  const vipPrice = basePrice + vipSurcharge;
 
   return {
     ...showtime,
     basePrice,
     vipSurcharge,
-    vipPrice: basePrice + vipSurcharge,
+    vipPrice,
     movie,
     room,
     bookedSeats,
   };
 };
 
+// 4. Kiểm tra mã ưu đãi người dùng nhập (hỗ trợ mã sinh viên PTIT35 giảm 35%)
 export const validatePromoCode = async (rawCode) => {
-  const normalizedCode = String(rawCode || '').trim().toUpperCase();
+  const cleanCode = String(rawCode || '').trim().toUpperCase();
 
-  if (!normalizedCode) {
+  if (!cleanCode) {
     return {
       valid: false,
       promo: null,
@@ -183,7 +297,7 @@ export const validatePromoCode = async (rawCode) => {
     };
   }
 
-  if (normalizedCode === DEFAULT_PTIT_PROMO.code) {
+  if (cleanCode === DEFAULT_PTIT_PROMO.code) {
     return {
       valid: true,
       promo: DEFAULT_PTIT_PROMO,
@@ -194,81 +308,49 @@ export const validatePromoCode = async (rawCode) => {
   return {
     valid: false,
     promo: null,
-    message: `Mã "${normalizedCode}" không hợp lệ. Gợi ý: dùng mã PTIT35 cho sinh viên PTIT.`,
+    message: `Mã "${cleanCode}" không hợp lệ. Gợi ý: nhập PTIT35 cho sinh viên PTIT.`,
   };
 };
 
-const normalizeSavedBooking = (raw, fallbackPayload, currentUser) => {
-  const seatCodes = normalizeSeatCodes(raw?.seats || fallbackPayload?.seats);
-  const total = Number(raw?.totalPrice ?? raw?.totalAmount ?? fallbackPayload?.totalPrice) || 0;
-  const showTimeStr = raw?.startTime || raw?.time || fallbackPayload?.time || '';
-
-  return {
-    ...raw,
-    id: raw?.id || raw?._id,
-    bookingCode: raw?.bookingCode || raw?.orderCode || raw?.id,
-    shortCode:
-      raw?.shortCode ||
-      String(raw?.bookingCode || raw?.id || '').replace(/\D/g, '').slice(-6) ||
-      '000000',
-    userId: raw?.userId || fallbackPayload?.userId || currentUser?.id || 'u1',
-    userName: raw?.userName || fallbackPayload?.customerName || currentUser?.fullName || '',
-    userEmail: raw?.userEmail || fallbackPayload?.customerEmail || currentUser?.email || '',
-    userPhone: raw?.userPhone || fallbackPayload?.customerPhone || currentUser?.phone || '',
-    showtimeId: raw?.showtimeId || fallbackPayload?.showtimeId || '',
-    movieId: raw?.movieId || fallbackPayload?.movieId || '',
-    movieTitle: raw?.movieTitle || fallbackPayload?.movieTitle || '',
-    originalTitle: raw?.originalTitle || fallbackPayload?.originalTitle || '',
-    ageRating: raw?.ageRating || fallbackPayload?.ageRating || 'P',
-    posterUrl: raw?.posterUrl || fallbackPayload?.posterUrl || '',
-    roomId: raw?.roomId || fallbackPayload?.roomId || '',
-    roomName: raw?.roomName || fallbackPayload?.roomName || '',
-    date: raw?.date || fallbackPayload?.date || '',
-    time: showTimeStr,
-    startTime: showTimeStr,
-    seats: seatCodes,
-    seatDetails:
-      raw?.seatDetails ||
-      (Array.isArray(fallbackPayload?.seats) ? fallbackPayload.seats : []),
-    combos: raw?.combos || (Array.isArray(fallbackPayload?.combos) ? fallbackPayload.combos : []),
-    promoCode: raw?.promoCode ?? fallbackPayload?.promoCode ?? null,
-    subtotal: Number(raw?.subtotal ?? fallbackPayload?.subtotal) || total,
-    discountAmount: Number(raw?.discountAmount ?? fallbackPayload?.discountAmount) || 0,
-    totalPrice: total,
-    totalAmount: total,
-    paymentMethod: raw?.paymentMethod || fallbackPayload?.paymentMethod || 'MoMo',
-    status: raw?.status || 'confirmed',
-    createdAt: raw?.createdAt || new Date().toISOString(),
-  };
-};
-
+// 5. Gửi yêu cầu tạo đơn đặt vé mới (ưu tiên gọi API, fallback localStorage nếu server tắt)
 export const createBooking = async (bookingPayload) => {
   const currentUser = getCurrentUser();
+  const url = `${API_BASE_URL}/bookings`;
 
   try {
-    const response = await apiClient.post('/bookings', bookingPayload);
-    const apiBooking = response.data?.booking ?? response.data?.data ?? response.data;
-    const normalized = normalizeSavedBooking(apiBooking, bookingPayload, currentUser);
-    saveLocalBooking(normalized);
+    const response = await axios.post(url, bookingPayload, getRequestConfig());
+    const data = response.data;
+    const rawBooking = data.booking || data.data || data;
+
+    const savedBooking = buildSavedBooking(
+      rawBooking,
+      bookingPayload,
+      currentUser
+    );
+    saveLocalBooking(savedBooking);
+
     return {
-      booking: normalized,
+      booking: savedBooking,
       source: 'api',
     };
   } catch (error) {
-    if (!isServerOfflineError(error)) {
-      const apiError = new Error(
-        error.response?.data?.message || 'Đặt vé thất bại. Vui lòng thử lại.'
-      );
-      apiError.status = error.response?.status || 500;
-      apiError.conflictSeats = error.response?.data?.conflictSeats || [];
+    if (error.response) {
+      const serverData = error.response.data || {};
+      const message =
+        serverData.message || 'Đặt vé thất bại. Vui lòng thử lại.';
+
+      const apiError = new Error(message);
+      apiError.status = error.response.status;
+      apiError.conflictSeats = serverData.conflictSeats || [];
       throw apiError;
     }
 
-    const requestedSeatCodes = normalizeSeatCodes(bookingPayload.seats);
+    const requestedCodes = extractSeatCodes(bookingPayload.seats);
     const currentOccupied = getFallbackOccupiedSeats(bookingPayload.showtimeId);
-    const conflictSeats = requestedSeatCodes.filter((code) =>
-      currentOccupied.includes(code)
-    );
+
+    const conflictSeats = requestedCodes.filter((code) => {
+      return currentOccupied.includes(code);
+    });
 
     if (conflictSeats.length > 0) {
       const conflictError = new Error(
@@ -279,12 +361,12 @@ export const createBooking = async (bookingPayload) => {
       throw conflictError;
     }
 
-    const { id, shortCode, bookingCode } = generateBookingIdentifiers();
-    const offlineBooking = normalizeSavedBooking(
+    const identifiers = createBookingIdentifiers();
+    const offlineBooking = buildSavedBooking(
       {
-        id,
-        shortCode,
-        bookingCode,
+        id: identifiers.id,
+        shortCode: identifiers.shortCode,
+        bookingCode: identifiers.bookingCode,
         status: 'confirmed',
         createdAt: new Date().toISOString(),
       },
@@ -301,33 +383,44 @@ export const createBooking = async (bookingPayload) => {
   }
 };
 
+// 6. Lấy chi tiết 1 vé theo mã bookingId (ưu tiên API, fallback localStorage rồi mockData)
 export const getBookingById = async (bookingId) => {
-  if (!bookingId) return null;
+  if (!bookingId) {
+    return null;
+  }
+
+  const url = `${API_BASE_URL}/bookings/${bookingId}`;
 
   try {
-    const response = await apiClient.get(
-      `/bookings/${encodeURIComponent(bookingId)}`
-    );
-    return response.data?.booking ?? response.data?.data ?? response.data;
+    const response = await axios.get(url, getRequestConfig());
+    const data = response.data;
+    return data.booking || data.data || data;
   } catch (error) {
-    if (!isServerOfflineError(error) && error.response?.status === 403) {
+    if (error.response && error.response.status === 403) {
       const forbiddenError = new Error('Bạn không có quyền xem vé này.');
       forbiddenError.status = 403;
       throw forbiddenError;
     }
 
-    const localMatch = readLocalBookings().find(
-      (item) =>
-        String(item.id) === String(bookingId) ||
-        String(item._id) === String(bookingId) ||
-        String(item.bookingCode) === String(bookingId) ||
-        String(item.shortCode) === String(bookingId)
-    );
-    if (localMatch) return localMatch;
+    const targetId = String(bookingId);
+    const localBookings = readLocalBookings();
+    const localFound = localBookings.find((item) => {
+      return (
+        String(item.id) === targetId ||
+        String(item._id) === targetId ||
+        String(item.bookingCode) === targetId ||
+        String(item.shortCode) === targetId
+      );
+    });
 
-    const mockMatch = mockData.bookings.find(
-      (item) => String(item.id) === String(bookingId)
-    );
-    return mockMatch || null;
+    if (localFound) {
+      return localFound;
+    }
+
+    const mockFound = mockData.bookings.find((item) => {
+      return String(item.id) === targetId;
+    });
+
+    return mockFound || null;
   }
 };
