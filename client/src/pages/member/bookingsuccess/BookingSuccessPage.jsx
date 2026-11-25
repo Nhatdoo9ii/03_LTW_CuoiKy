@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { AlertCircle, Check, Home, ShieldAlert, Ticket } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import ElectronicTicket from '../../../components/tickets-admin/ElectronicTicket';
+import ElectronicTicket from '../../../components/tickets-admin/electronicticket/ElectronicTicket';
 import { selectLastCompletedBooking } from '../../../store/bookingSlice';
 import { getBookingById } from '../../../services/bookingService';
 import styles from './BookingSuccessPage.module.css';

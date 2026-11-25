@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import CountdownTimer from '../../../components/booking/coutdowntimer/CountdownTimer';
-import PaymentMethodSelector from '../../../components/tickets-admin/PaymentMethodSelector';
+import PaymentMethodSelector from '../../../components/tickets-admin/paymentmethod/PaymentMethodSelector';
 import {
   AVAILABLE_COMBOS,
   applyPromoCode,
