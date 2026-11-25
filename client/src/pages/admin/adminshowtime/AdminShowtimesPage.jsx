@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
+  AlertCircle,
   Calendar,
   CheckCircle2,
   Clock,
@@ -12,11 +13,12 @@ import {
 import ShowtimeForm from '../../../components/tickets-admin/showtimeform/ShowtimeForm';
 import Pagination from '../../../components/common/Pagination';
 import { useDebounce } from '../../../hooks/useDebounce';
+import movieService from '../../../services/movieService';
+import { getAllRooms } from '../../../services/roomService';
 import {
   createShowtime,
   deleteShowtime,
   getAllShowtimes,
-  getMoviesAndRooms,
   timeToMinutes,
   updateShowtime,
 } from '../../../services/showtimeService';
@@ -78,7 +80,7 @@ const formatDateTabLabel = (dateStr) => {
   return `${dayName} (${shortDate})`;
 };
 
-// Hàm phụ: tạo mã suất chiếu hiển thị gọn đẹp (VD: "#SC-ST1")
+// Hàm phụ: rút gọn mã suất chiếu từ MongoDB ObjectId hoặc mã mẫu (VD: "#SC-A91C")
 const formatShowtimeCode = (id) => {
   const raw = String(id || '').toUpperCase();
   if (raw.length <= 6) {
@@ -87,26 +89,29 @@ const formatShowtimeCode = (id) => {
   return `#SC-${raw.slice(-4)}`;
 };
 
-// Hàm phụ: xác định nhãn định dạng phòng chiếu để hiển thị thẻ màu
+// Hàm phụ: xác định nhãn công nghệ của phòng chiếu (đồng bộ với roomService)
 const getRoomFormatInfo = (room) => {
   if (!room) {
     return { label: '2D Digital', badgeType: 'standard' };
   }
 
-  const totalSeats = Number(room.totalSeats) || 80;
-  if (totalSeats >= 110) {
-    return { label: 'IMAX Laser 4K', badgeType: 'imax' };
+  if (room.technologyId === 'imax') {
+    return { label: room.technologyLabel || 'IMAX Laser', badgeType: 'imax' };
   }
-  if (totalSeats <= 50) {
-    return { label: 'VIP Gold Class', badgeType: 'vip' };
+  if (room.technologyId === 'vip') {
+    return { label: room.technologyLabel || 'VIP Gold Class', badgeType: 'vip' };
   }
-  if (String(room.id) === 'r2') {
-    return { label: '2D Dolby 7.1', badgeType: 'dolby' };
+  if (room.technologyId === 'dolby') {
+    return { label: room.technologyLabel || '2D Dolby 7.1', badgeType: 'dolby' };
   }
-  return { label: '2D Digital', badgeType: 'standard' };
+
+  return {
+    label: room.technologyLabel || '2D Digital',
+    badgeType: 'standard',
+  };
 };
 
-// Hàm phụ: kiểm tra trạng thái thời gian của 1 suất chiếu (đã chiếu xong / đang chiếu / sắp chiếu)
+// Hàm phụ: xác định suất chiếu đã chiếu xong, đang chiếu hay sắp chiếu
 const getTimePhase = (showtime) => {
   if (!showtime || !showtime.date) {
     return 'upcoming';
@@ -121,7 +126,7 @@ const getTimePhase = (showtime) => {
   const month = Number(parts[1]);
   const day = Number(parts[2]);
 
-  const startMinutes = timeToMinutes(showtime.time || showtime.startTime);
+  const startMinutes = timeToMinutes(showtime.startTime || showtime.time);
   const startHours = Math.floor(startMinutes / 60);
   const startMins = startMinutes % 60;
 
@@ -162,7 +167,7 @@ const getBookingStatusInfo = (showtime, timePhase) => {
   return { label: 'Đang mở bán', type: 'open' };
 };
 
-// Hàm phụ: gom danh sách các ngày có suất chiếu (không trùng lặp) để làm thanh tab lọc
+// Hàm phụ: gom danh sách các ngày có suất chiếu (không trùng lặp) để tạo thanh tab lọc
 const collectUniqueDates = (showtimes) => {
   let dates = [];
 
@@ -172,45 +177,54 @@ const collectUniqueDates = (showtimes) => {
     }
   }
 
-  // Sắp xếp ngày tăng dần theo thứ tự thời gian
-  const sortedDates = [...dates].sort((a, b) => a.localeCompare(b));
-  return sortedDates;
+  return [...dates].sort((a, b) => a.localeCompare(b));
 };
 
 // Trang Quản lý Lịch chiếu & Suất chiếu dành cho Admin (/admin/showtimes)
 const AdminShowtimesPage = () => {
-  // Lấy danh sách phim và phòng chiếu từ dữ liệu mẫu
-  const { movies, rooms } = getMoviesAndRooms();
-
-  // State danh sách suất chiếu và trạng thái tải
+  // Danh sách suất chiếu, phim và phòng chiếu tải trực tiếp từ Backend API
   const [showtimes, setShowtimes] = useState([]);
+  const [movies, setMovies] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [pageError, setPageError] = useState('');
 
-  // State lọc theo ngày, ô tìm kiếm và phân trang
+  // Bộ lọc ngày, ô tìm kiếm và phân trang
   const [selectedDate, setSelectedDate] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // State quản lý suất chiếu đang sửa, modal xác nhận xóa và thông báo nhanh
+  // State quản lý sửa, xóa và thông báo nhanh
   const [editingShowtime, setEditingShowtime] = useState(null);
   const [showtimeToDelete, setShowtimeToDelete] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
 
-  // Dùng custom hook useDebounce để tránh lọc lại bảng liên tục khi đang gõ tìm kiếm
+  // Dùng custom hook useDebounce có sẵn để tối ưu thanh tìm kiếm
   const debouncedSearch = useDebounce(searchText, 300);
 
-  // Bước 1: Tải toàn bộ danh sách suất chiếu khi mở trang
+  // Bước 1: Gọi lần lượt 3 API để nạp đầy đủ Phim, Phòng chiếu và Suất chiếu từ MongoDB
   useEffect(() => {
     let isCancelled = false;
 
-    const loadShowtimes = async () => {
+    const loadInitialData = async () => {
       try {
-        const list = await getAllShowtimes();
+        const movieResult = await movieService.getMovies({ limit: 50 });
+        const roomList = await getAllRooms();
+        const showtimeList = await getAllShowtimes();
+
         if (!isCancelled) {
-          setShowtimes(list);
+          setMovies(movieResult.movies || []);
+          setRooms(roomList || []);
+          setShowtimes(showtimeList || []);
+          setPageError('');
         }
       } catch (error) {
-        console.warn('Lỗi tải danh sách suất chiếu:', error);
+        if (!isCancelled) {
+          setPageError(
+            error.message || 'Không thể tải dữ liệu lịch chiếu từ máy chủ.'
+          );
+        }
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -218,14 +232,14 @@ const AdminShowtimesPage = () => {
       }
     };
 
-    loadShowtimes();
+    loadInitialData();
 
     return () => {
       isCancelled = true;
     };
   }, []);
 
-  // Bước 2: Tự động ẩn thông báo toast sau 3.5 giây (có cleanup clearTimeout)
+  // Bước 2: Tự động ẩn thông báo thành công sau 3.5 giây (có cleanup clearTimeout)
   useEffect(() => {
     if (!toastMessage) {
       return;
@@ -250,7 +264,7 @@ const AdminShowtimesPage = () => {
     });
   }
 
-  // Bước 4: Tính 3 thẻ số liệu thống kê (Tổng suất, Đang & Sắp chiếu, Đã chiếu xong)
+  // Bước 4: Tính 3 số liệu thống kê (Tổng suất, Đang & Sắp chiếu, Đã chiếu xong)
   let upcomingOrPlayingCount = 0;
   let finishedCount = 0;
 
@@ -265,7 +279,7 @@ const AdminShowtimesPage = () => {
 
   const totalStatCount = dateFilteredShowtimes.length;
 
-  // Bước 5: Tiếp tục lọc theo từ khóa tìm kiếm (tên phim, tên phòng hoặc mã suất)
+  // Bước 5: Lọc tiếp theo từ khóa tìm kiếm (tên phim, tên phòng hoặc mã suất)
   const cleanKeyword = debouncedSearch.trim().toLowerCase();
   let finalShowtimes = dateFilteredShowtimes;
 
@@ -291,16 +305,16 @@ const AdminShowtimesPage = () => {
     });
   }
 
-  // Sắp xếp bảng theo ngày và giờ bắt đầu tăng dần để Admin dễ theo dõi lịch
+  // Sắp xếp theo ngày và giờ bắt đầu tăng dần
   const sortedShowtimes = [...finalShowtimes].sort((a, b) => {
     const dateCompare = String(a.date || '').localeCompare(String(b.date || ''));
     if (dateCompare !== 0) {
       return dateCompare;
     }
-    return timeToMinutes(a.time) - timeToMinutes(b.time);
+    return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
   });
 
-  // Bước 6: Tính phân trang cho danh sách đã lọc
+  // Bước 6: Tính phân trang cho bảng danh sách
   const totalPages = Math.max(
     1,
     Math.ceil(sortedShowtimes.length / ITEMS_PER_PAGE)
@@ -316,7 +330,7 @@ const AdminShowtimesPage = () => {
     startIndex + ITEMS_PER_PAGE
   );
 
-  // Các hàm xử lý lọc ngày & tìm kiếm (đưa trang về 1 ngay khi người dùng thay đổi bộ lọc)
+  // Các hàm xử lý thay đổi bộ lọc
   const handleSelectDateTab = (dateValue) => {
     setSelectedDate(dateValue);
     setCurrentPage(1);
@@ -342,7 +356,7 @@ const AdminShowtimesPage = () => {
     setCurrentPage(1);
   };
 
-  // Xử lý lưu suất chiếu (tạo mới hoặc cập nhật suất đang chỉnh sửa)
+  // Xử lý tạo suất chiếu mới hoặc lưu chỉnh sửa qua API /api/showtimes
   const handleSubmitShowtime = async (formValues) => {
     if (editingShowtime) {
       const updated = await updateShowtime(editingShowtime.id, formValues);
@@ -366,29 +380,35 @@ const AdminShowtimesPage = () => {
     setSelectedDate('all');
     setCurrentPage(1);
     setToastMessage(
-      `Đã tạo thành công suất chiếu mới (${created.time} ngày ${formatDateFull(
+      `Đã tạo thành công suất chiếu mới (${created.startTime} ngày ${formatDateFull(
         created.date
       )})`
     );
   };
 
-  // Bắt đầu chỉnh sửa 1 suất chiếu và cuộn lên vị trí Form
+  // Bắt đầu chỉnh sửa 1 suất chiếu và cuộn lên đầu trang nơi đặt Form
   const handleStartEdit = (showtime) => {
     setEditingShowtime(showtime);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Hủy chế độ chỉnh sửa
   const handleCancelEdit = () => {
     setEditingShowtime(null);
   };
 
-  // Xác nhận xóa suất chiếu trong modal
+  // Mở modal xác nhận xóa
+  const handleOpenDeleteModal = (showtime) => {
+    setDeleteError('');
+    setShowtimeToDelete(showtime);
+  };
+
+  // Xác nhận xóa suất chiếu qua API DELETE /api/showtimes/:id
   const handleConfirmDelete = async () => {
     if (!showtimeToDelete) {
       return;
     }
 
+    setDeleteError('');
     try {
       await deleteShowtime(showtimeToDelete.id);
       const remaining = showtimes.filter((item) => {
@@ -407,20 +427,19 @@ const AdminShowtimesPage = () => {
       setToastMessage(
         `Đã xóa suất chiếu ${formatShowtimeCode(showtimeToDelete.id)}`
       );
-    } catch (error) {
-      window.alert(error.message || 'Không thể xóa suất chiếu này.');
-    } finally {
       setShowtimeToDelete(null);
+    } catch (error) {
+      setDeleteError(
+        error.message || 'Không thể xóa suất chiếu này. Vui lòng thử lại.'
+      );
     }
   };
 
-  // Tiêu đề thẻ thống kê đầu tiên thay đổi theo ngày đang chọn
   let totalCardTitle = 'Tổng số suất chiếu';
   if (selectedDate !== 'all') {
     totalCardTitle = `Tổng suất chiếu (${formatDateFull(selectedDate)})`;
   }
 
-  // Ngày mặc định cho form tạo mới (lấy theo tab ngày đang chọn nếu có)
   let defaultFormDate = '';
   if (selectedDate !== 'all') {
     defaultFormDate = selectedDate;
@@ -428,19 +447,27 @@ const AdminShowtimesPage = () => {
     defaultFormDate = availableDates[0];
   }
 
-  // Key giúp Form tự nạp lại giá trị khi chuyển giữa "Tạo mới" và "Chỉnh sửa"
-  let formKey = `create-${defaultFormDate}`;
+  // Key giúp ShowtimeForm tự chọn sẵn phim/phòng đầu tiên ngay khi tải xong dữ liệu API
+  let formKey = `create-${movies.length}-${rooms.length}-${defaultFormDate}`;
   if (editingShowtime) {
     formKey = `edit-${editingShowtime.id}`;
   }
 
   return (
     <section className={styles.pageWrapper}>
-      {/* Thông báo nhanh sau khi thêm / sửa / xóa */}
+      {/* Thông báo nhanh khi thao tác thành công */}
       {toastMessage && (
         <div className={styles.toastBanner} role="status">
           <CheckCircle2 size={18} aria-hidden="true" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Thông báo lỗi tải dữ liệu (nếu có) */}
+      {pageError && (
+        <div className={styles.errorBanner} role="alert">
+          <AlertCircle size={18} aria-hidden="true" />
+          <span>{pageError}</span>
         </div>
       )}
 
@@ -510,9 +537,12 @@ const AdminShowtimesPage = () => {
 
       {/* 4. BỘ LỌC NGÀY, TÌM KIẾM VÀ BẢNG DANH SÁCH SUẤT CHIẾU */}
       <section className={styles.tableCard} aria-label="Danh sách suất chiếu">
-        {/* Thanh lọc theo ngày dạng tab + ô chọn ngày tùy ý */}
         <div className={styles.filterToolbar}>
-          <div className={styles.dateTabs} role="tablist" aria-label="Lọc theo ngày chiếu">
+          <div
+            className={styles.dateTabs}
+            role="tablist"
+            aria-label="Lọc theo ngày chiếu"
+          >
             <button
               type="button"
               role="tab"
@@ -549,7 +579,11 @@ const AdminShowtimesPage = () => {
           </div>
 
           <div className={styles.datePickerWrap}>
-            <Calendar size={15} className={styles.datePickerIcon} aria-hidden="true" />
+            <Calendar
+              size={15}
+              className={styles.datePickerIcon}
+              aria-hidden="true"
+            />
             <label htmlFor="filter-showtime-date" className={styles.srOnly}>
               Chọn ngày chiếu cần lọc
             </label>
@@ -575,7 +609,7 @@ const AdminShowtimesPage = () => {
               type="text"
               value={searchText}
               onChange={handleSearchChange}
-              placeholder="Tìm theo tên phim, phòng chiếu, mã suất (#SC-ST1)..."
+              placeholder="Tìm theo tên phim, phòng chiếu, mã suất..."
               className={styles.searchInput}
             />
             {searchText && (
@@ -599,7 +633,7 @@ const AdminShowtimesPage = () => {
         {/* Nội dung bảng */}
         {isLoading ? (
           <div className={styles.emptyBox}>
-            <p>Đang tải danh sách lịch chiếu...</p>
+            <p>Đang tải danh sách lịch chiếu từ máy chủ...</p>
           </div>
         ) : paginatedShowtimes.length === 0 ? (
           <div className={styles.emptyBox}>
@@ -638,7 +672,6 @@ const AdminShowtimesPage = () => {
                     genresText = movie.genres.join(', ');
                   }
 
-                  // Chọn màu cho thanh tiến độ và thẻ trạng thái
                   let progressClass = styles.progressBlue;
                   let badgeClass = styles.statusOpen;
 
@@ -674,7 +707,6 @@ const AdminShowtimesPage = () => {
                       key={item.id}
                       className={isBeingEdited ? styles.editingRow : ''}
                     >
-                      {/* Cột 1: Mã suất & ngày */}
                       <td>
                         <div className={styles.codeCell}>
                           <strong className={styles.showtimeCode}>
@@ -686,7 +718,6 @@ const AdminShowtimesPage = () => {
                         </div>
                       </td>
 
-                      {/* Cột 2: Thông tin phim */}
                       <td>
                         <div className={styles.movieCell}>
                           <div className={styles.posterThumb}>
@@ -720,7 +751,6 @@ const AdminShowtimesPage = () => {
                         </div>
                       </td>
 
-                      {/* Cột 3: Phòng & định dạng */}
                       <td>
                         <div className={styles.roomCell}>
                           <strong className={styles.roomName}>
@@ -737,18 +767,16 @@ const AdminShowtimesPage = () => {
                         </div>
                       </td>
 
-                      {/* Cột 4: Khung giờ */}
                       <td>
                         <div className={styles.timeCell}>
                           <strong className={styles.startTime}>
-                            {item.time}
+                            {item.startTime}
                           </strong>
                           <span className={styles.timeArrow}>→</span>
                           <span className={styles.endTime}>{item.endTime}</span>
                         </div>
                       </td>
 
-                      {/* Cột 5: Giá vé Thường / VIP */}
                       <td>
                         <div className={styles.priceCell}>
                           <strong className={styles.basePrice}>
@@ -760,7 +788,6 @@ const AdminShowtimesPage = () => {
                         </div>
                       </td>
 
-                      {/* Cột 6: Tỷ lệ lấp đầy & Trạng thái */}
                       <td>
                         <div className={styles.occupancyCell}>
                           <div className={styles.occupancyTop}>
@@ -779,13 +806,14 @@ const AdminShowtimesPage = () => {
                             />
                           </div>
 
-                          <span className={`${styles.statusBadge} ${badgeClass}`}>
+                          <span
+                            className={`${styles.statusBadge} ${badgeClass}`}
+                          >
                             • {statusInfo.label}
                           </span>
                         </div>
                       </td>
 
-                      {/* Cột 7: Nút Sửa / Xóa */}
                       <td>
                         <div className={styles.rowActions}>
                           <button
@@ -803,7 +831,7 @@ const AdminShowtimesPage = () => {
                           <button
                             type="button"
                             className={styles.deleteBtn}
-                            onClick={() => setShowtimeToDelete(item)}
+                            onClick={() => handleOpenDeleteModal(item)}
                             title="Xóa suất chiếu"
                             aria-label={`Xóa suất chiếu ${formatShowtimeCode(
                               item.id
@@ -821,7 +849,6 @@ const AdminShowtimesPage = () => {
           </div>
         )}
 
-        {/* Thanh phân trang tái sử dụng từ components/common/Pagination.jsx */}
         <div className={styles.paginationWrap}>
           <Pagination
             currentPage={safeCurrentPage}
@@ -863,11 +890,18 @@ const AdminShowtimesPage = () => {
                   : showtimeToDelete.movieId}
               </p>
               <p>
-                <strong>Thời gian:</strong> {showtimeToDelete.time} →{' '}
-                {showtimeToDelete.endTime} ({formatDateFull(showtimeToDelete.date)}
-                )
+                <strong>Thời gian:</strong> {showtimeToDelete.startTime} →{' '}
+                {showtimeToDelete.endTime} (
+                {formatDateFull(showtimeToDelete.date)})
               </p>
             </div>
+
+            {deleteError && (
+              <div className={styles.modalError} role="alert">
+                <AlertCircle size={16} aria-hidden="true" />
+                <span>{deleteError}</span>
+              </div>
+            )}
 
             <div className={styles.modalActions}>
               <button
@@ -875,7 +909,7 @@ const AdminShowtimesPage = () => {
                 className={styles.cancelModalBtn}
                 onClick={() => setShowtimeToDelete(null)}
               >
-                Giữ lại
+                Đóng
               </button>
               <button
                 type="button"

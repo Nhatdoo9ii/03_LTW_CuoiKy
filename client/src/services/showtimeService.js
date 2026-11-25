@@ -1,15 +1,14 @@
+/* eslint-disable preserve-caught-error */
 import axios from 'axios';
 import mockData from '../data/mockData.json';
+import { normalizeRoom } from './roomService';
 
-// Địa chỉ gốc của Backend API
+// Địa chỉ gốc của Backend API (cổng 5001 khớp với server)
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Khóa lưu danh sách suất chiếu trong localStorage khi server chưa bật
 export const LOCAL_SHOWTIMES_KEY = 'ptit_showtimes';
-
-// Khóa lưu danh sách vé để đếm số ghế đã bán thực tế của từng suất chiếu
-const LOCAL_BOOKINGS_KEY = 'ptit_bookings';
 
 // Hàm phụ: tạo cấu hình gửi kèm JWT token lên server (dành cho quyền Admin)
 const getRequestConfig = () => {
@@ -23,7 +22,7 @@ const getRequestConfig = () => {
   }
 
   return {
-    timeout: 4000,
+    timeout: 5000,
     headers,
   };
 };
@@ -44,7 +43,7 @@ export const timeToMinutes = (timeStr) => {
   return hours * 60 + minutes;
 };
 
-// Hàm phụ: tính giờ kết thúc từ giờ bắt đầu và thời lượng phim (VD: "18:30" + 142 phút -> "20:52")
+// Hàm phụ: tính giờ kết thúc từ giờ bắt đầu và thời lượng phim
 export const calculateEndTime = (startTime, durationMinutes) => {
   if (!startTime) {
     return '--:--';
@@ -54,7 +53,6 @@ export const calculateEndTime = (startTime, durationMinutes) => {
   const duration = Number(durationMinutes) || 120;
   const endTotalMinutes = startTotalMinutes + duration;
 
-  // Lấy phần dư cho 24 giờ đề phòng suất chiếu đêm qua 00:00
   const endHours = Math.floor(endTotalMinutes / 60) % 24;
   const endMinutes = endTotalMinutes % 60;
 
@@ -64,7 +62,7 @@ export const calculateEndTime = (startTime, durationMinutes) => {
   return `${hourText}:${minuteText}`;
 };
 
-// Hàm phụ: đọc danh sách suất chiếu lưu trong localStorage (nếu chưa có thì nạp từ mockData.json)
+// Hàm phụ: đọc danh sách suất chiếu cục bộ (dùng khi server chưa bật)
 const readLocalShowtimes = () => {
   try {
     const savedText = localStorage.getItem(LOCAL_SHOWTIMES_KEY);
@@ -75,88 +73,94 @@ const readLocalShowtimes = () => {
       }
     }
   } catch (error) {
-    console.warn('Không thể đọc danh sách suất chiếu từ localStorage:', error);
+    console.warn('Không thể đọc danh sách suất chiếu cục bộ:', error);
   }
 
-  // Lần đầu tiên: sao chép dữ liệu mẫu từ mockData.json và lưu lại
-  const initialList = mockData.showtimes.map((item) => ({ ...item }));
+  const initialList = (mockData.showtimes || []).map((item) => ({ ...item }));
   localStorage.setItem(LOCAL_SHOWTIMES_KEY, JSON.stringify(initialList));
   return initialList;
 };
 
-// Hàm phụ: ghi danh sách suất chiếu vào localStorage
+// Hàm phụ: lưu danh sách suất chiếu cục bộ vào localStorage
 const saveLocalShowtimes = (showtimes) => {
   try {
     localStorage.setItem(LOCAL_SHOWTIMES_KEY, JSON.stringify(showtimes));
   } catch (error) {
-    console.warn('Không thể lưu danh sách suất chiếu vào localStorage:', error);
+    console.warn('Không thể lưu danh sách suất chiếu cục bộ:', error);
   }
 };
 
-// Hàm phụ: đếm số ghế đã bán của 1 suất chiếu (gộp cả mockData và vé đặt ở localStorage)
-const getBookedSeatsForShowtime = (showtime) => {
-  let seatList = [];
+// Hàm phụ: chuẩn hóa 1 bản ghi suất chiếu từ MongoDB (đã populate) hoặc mockData về cùng 1 cấu trúc
+export const normalizeShowtime = (rawShowtime) => {
+  if (!rawShowtime) {
+    return null;
+  }
 
-  // Bước 1: Lấy các ghế đã bán sẵn trong dữ liệu suất chiếu
-  if (Array.isArray(showtime.bookedSeats)) {
-    for (const code of showtime.bookedSeats) {
-      if (!seatList.includes(code)) {
-        seatList = [...seatList, code];
-      }
+  // Bước 1: Tách mã phim (movieId dạng chuỗi) và thông tin đầy đủ của phim (object movie)
+  let movieId = '';
+  let movie = null;
+
+  if (rawShowtime.movieId && typeof rawShowtime.movieId === 'object') {
+    const populatedMovie = rawShowtime.movieId;
+    movieId = String(populatedMovie._id || populatedMovie.id || '');
+    movie = {
+      ...populatedMovie,
+      id: movieId,
+    };
+  } else {
+    movieId = rawShowtime.movieId ? String(rawShowtime.movieId) : '';
+    const mockMovie = (mockData.movies || []).find((m) => {
+      return String(m.id) === movieId;
+    });
+    if (mockMovie) {
+      movie = { ...mockMovie };
     }
   }
 
-  // Bước 2: Cộng thêm các ghế khách mới đặt lưu trong ptit_bookings (bỏ qua vé đã hủy)
-  try {
-    const savedBookingsText = localStorage.getItem(LOCAL_BOOKINGS_KEY);
-    if (savedBookingsText) {
-      const bookings = JSON.parse(savedBookingsText);
-      if (Array.isArray(bookings)) {
-        for (const booking of bookings) {
-          const isSameShowtime =
-            String(booking.showtimeId) === String(showtime.id);
-          const isActive = booking.status !== 'cancelled';
+  // Bước 2: Tách mã phòng (roomId dạng chuỗi) và thông tin phòng chuẩn hóa (object room)
+  let roomId = '';
+  let room = null;
 
-          if (isSameShowtime && isActive && Array.isArray(booking.seats)) {
-            for (const seat of booking.seats) {
-              const seatCode = typeof seat === 'string' ? seat : seat.code;
-              if (seatCode && !seatList.includes(seatCode)) {
-                seatList = [...seatList, seatCode];
-              }
-            }
-          }
-        }
-      }
+  if (rawShowtime.roomId && typeof rawShowtime.roomId === 'object') {
+    const populatedRoom = normalizeRoom(rawShowtime.roomId);
+    roomId = String(populatedRoom.id || '');
+    room = populatedRoom;
+  } else {
+    roomId = rawShowtime.roomId ? String(rawShowtime.roomId) : '';
+    const mockRoom = (mockData.rooms || []).find((r) => {
+      return String(r.id) === roomId;
+    });
+    if (mockRoom) {
+      room = normalizeRoom(mockRoom);
     }
-  } catch (error) {
-    console.warn('Không thể đọc vé cục bộ để tính tỷ lệ lấp đầy:', error);
   }
 
-  return seatList;
-};
+  // Bước 3: Chuẩn hóa giờ bắt đầu, giờ kết thúc và giá vé Thường / VIP
+  const startTime = rawShowtime.startTime || rawShowtime.time || '09:00';
+  const duration = movie && movie.duration ? Number(movie.duration) : 120;
+  const endTime =
+    rawShowtime.endTime || calculateEndTime(startTime, duration);
 
-// Hàm phụ: gắn thêm thông tin phim, phòng, giờ kết thúc, giá VIP và tỷ lệ bán cho từng suất chiếu
-const enrichShowtime = (showtime) => {
-  const movie =
-    mockData.movies.find((item) => String(item.id) === String(showtime.movieId)) ||
-    null;
-  const room =
-    mockData.rooms.find((item) => String(item.id) === String(showtime.roomId)) ||
-    null;
-
-  const startTime = showtime.time || showtime.startTime || '09:00';
-  const duration = movie ? Number(movie.duration) : 120;
-  const endTime = calculateEndTime(startTime, duration);
-
-  const basePrice = Number(showtime.basePrice) || 85000;
-  let vipPrice = basePrice + 15000;
-  if (showtime.vipPrice !== undefined) {
-    vipPrice = Number(showtime.vipPrice);
-  } else if (showtime.vipSurcharge !== undefined) {
-    vipPrice = basePrice + Number(showtime.vipSurcharge);
+  let basePrice = 85000;
+  if (rawShowtime.price !== undefined) {
+    basePrice = Number(rawShowtime.price);
+  } else if (rawShowtime.basePrice !== undefined) {
+    basePrice = Number(rawShowtime.basePrice);
   }
 
-  const bookedSeats = getBookedSeatsForShowtime(showtime);
+  let vipSurcharge = 15000;
+  if (rawShowtime.vipSurcharge !== undefined) {
+    vipSurcharge = Number(rawShowtime.vipSurcharge);
+  } else if (rawShowtime.vipPrice !== undefined) {
+    vipSurcharge = Math.max(0, Number(rawShowtime.vipPrice) - basePrice);
+  }
+
+  const vipPrice = basePrice + vipSurcharge;
+
+  // Bước 4: Tính số ghế đã bán và phần trăm lấp đầy phòng chiếu
+  const bookedSeats = Array.isArray(rawShowtime.bookedSeats)
+    ? rawShowtime.bookedSeats
+    : [];
   const totalSeats = room && room.totalSeats ? Number(room.totalSeats) : 80;
   const bookedCount = bookedSeats.length;
 
@@ -168,15 +172,21 @@ const enrichShowtime = (showtime) => {
     }
   }
 
+  const showtimeId = String(rawShowtime._id || rawShowtime.id || '');
+
   return {
-    ...showtime,
-    id: showtime.id || showtime._id,
+    id: showtimeId,
+    _id: showtimeId,
+    movieId,
+    roomId,
+    date: rawShowtime.date || '',
     time: startTime,
     startTime,
     endTime,
+    price: basePrice,
     basePrice,
+    vipSurcharge,
     vipPrice,
-    vipSurcharge: Math.max(0, vipPrice - basePrice),
     movie,
     room,
     bookedSeats,
@@ -186,21 +196,22 @@ const enrichShowtime = (showtime) => {
   };
 };
 
-// Hàm phụ: kiểm tra 1 suất chiếu mới có bị trùng giờ với suất đã có trong cùng phòng & cùng ngày không
+// Hàm phụ: kiểm tra chồng giờ chiếu khi chạy chế độ offline (server đã tự kiểm tra khi online)
 export const findOverlappingShowtime = (
   candidate,
   existingShowtimes,
   ignoreId = null
 ) => {
-  const candidateMovie = mockData.movies.find(
-    (item) => String(item.id) === String(candidate.movieId)
-  );
-  const candidateDuration = candidateMovie ? Number(candidateMovie.duration) : 120;
-  const candidateStart = timeToMinutes(candidate.time);
+  const candidateMovie = (mockData.movies || []).find((item) => {
+    return String(item.id) === String(candidate.movieId);
+  });
+  const candidateDuration = candidateMovie
+    ? Number(candidateMovie.duration)
+    : 120;
+  const candidateStart = timeToMinutes(candidate.startTime || candidate.time);
   const candidateEnd = candidateStart + candidateDuration;
 
   for (const item of existingShowtimes) {
-    // Nếu đang chỉnh sửa chính suất chiếu đó thì bỏ qua chính nó
     if (ignoreId && String(item.id) === String(ignoreId)) {
       continue;
     }
@@ -209,19 +220,23 @@ export const findOverlappingShowtime = (
     const isSameDate = String(item.date) === String(candidate.date);
 
     if (isSameRoom && isSameDate) {
-      const existingMovie = mockData.movies.find(
-        (m) => String(m.id) === String(item.movieId)
-      );
-      const existingDuration = existingMovie ? Number(existingMovie.duration) : 120;
-      const existingStart = timeToMinutes(item.time || item.startTime);
+      const existingMovie = (mockData.movies || []).find((m) => {
+        return String(m.id) === String(item.movieId);
+      });
+      const existingDuration = existingMovie
+        ? Number(existingMovie.duration)
+        : 120;
+      const existingStart = timeToMinutes(item.startTime || item.time);
       const existingEnd = existingStart + existingDuration;
 
-      // Hai khoảng thời gian [A, B) và [C, D) bị chồng lên nhau khi A < D và B > C
       if (candidateStart < existingEnd && candidateEnd > existingStart) {
         return {
-          ...item,
           movieTitle: existingMovie ? existingMovie.title : 'Suất chiếu khác',
-          endTime: calculateEndTime(item.time || item.startTime, existingDuration),
+          time: item.startTime || item.time,
+          endTime: calculateEndTime(
+            item.startTime || item.time,
+            existingDuration
+          ),
         };
       }
     }
@@ -230,154 +245,192 @@ export const findOverlappingShowtime = (
   return null;
 };
 
-// 1. Lấy danh sách Phim và Phòng chiếu để đổ vào 2 ô chọn trong Form
-export const getMoviesAndRooms = () => {
-  return {
-    movies: mockData.movies,
-    rooms: mockData.rooms,
-  };
-};
-
-// 2. Lấy toàn bộ danh sách suất chiếu (ưu tiên API, fallback sang localStorage/mockData)
-export const getAllShowtimes = async () => {
+// 1. Lấy danh sách toàn bộ suất chiếu (hỗ trợ lọc theo movieId, roomId, date)
+export const getAllShowtimes = async (filters = {}) => {
   const url = `${API_BASE_URL}/showtimes`;
+  const config = getRequestConfig();
+  config.params = filters;
 
   try {
-    const response = await axios.get(url, getRequestConfig());
+    const response = await axios.get(url, config);
     const data = response.data;
-    const rawList = data.showtimes || data.data || data;
+    const rawList = data.data || data.showtimes || [];
 
     if (Array.isArray(rawList)) {
-      return rawList.map((item) => enrichShowtime(item));
+      return rawList.map((item) => normalizeShowtime(item));
     }
     return [];
   } catch (error) {
-    console.warn('Lấy danh sách suất chiếu từ dữ liệu cục bộ:', error.message);
+    // Nếu server đang chạy nhưng trả lỗi nghiệp vụ thì báo lỗi lên giao diện
+    if (error.response) {
+      const serverData = error.response.data || {};
+       
+      throw new Error(
+        serverData.message || 'Không thể tải danh sách suất chiếu.'
+      );
+    }
+
+    // Nếu server tắt thì dùng dữ liệu cục bộ
+    console.warn('Server offline, lấy danh sách suất chiếu cục bộ');
     const localList = readLocalShowtimes();
-    return localList.map((item) => enrichShowtime(item));
+    return localList.map((item) => normalizeShowtime(item));
   }
 };
 
-// 3. Tạo suất chiếu mới (có kiểm tra chống trùng giờ trong cùng phòng chiếu)
+// 2. Lấy chi tiết 1 suất chiếu theo ID (GET /api/showtimes/:id)
+export const getShowtimeById = async (showtimeId) => {
+  const url = `${API_BASE_URL}/showtimes/${showtimeId}`;
+
+  try {
+    const response = await axios.get(url, getRequestConfig());
+    const raw = response.data.data || response.data;
+    return normalizeShowtime(raw);
+  } catch (error) {
+    if (error.response) {
+      if (error.response.status === 404 || error.response.status === 400) {
+        return null;
+      }
+      const serverData = error.response.data || {};
+       
+      throw new Error(
+        serverData.message || 'Không thể tải thông tin suất chiếu.'
+      );
+    }
+
+    // Fallback khi server chưa chạy: tìm trong localStorage / mockData
+    const localList = readLocalShowtimes();
+    const found = localList.find((item) => {
+      return String(item.id) === String(showtimeId);
+    });
+
+    return found ? normalizeShowtime(found) : null;
+  }
+};
+
+// 3. Tạo suất chiếu mới (POST /api/showtimes - gửi đúng tên trường của Showtime.js)
 export const createShowtime = async (formData) => {
   const url = `${API_BASE_URL}/showtimes`;
-  const basePrice = Number(formData.basePrice);
+  const price = Number(formData.basePrice);
   const vipPrice = Number(formData.vipPrice);
+  const vipSurcharge = Math.max(0, vipPrice - price);
 
   const payload = {
     movieId: formData.movieId,
     roomId: formData.roomId,
     date: formData.date,
-    time: formData.time,
-    basePrice,
-    vipPrice,
-    vipSurcharge: Math.max(0, vipPrice - basePrice),
+    startTime: formData.time,
+    price,
+    vipSurcharge,
   };
 
   try {
     const response = await axios.post(url, payload, getRequestConfig());
-    const data = response.data;
-    const created = data.showtime || data.data || data;
-    return enrichShowtime(created);
+    const created = response.data.data || response.data;
+    return normalizeShowtime(created);
   } catch (error) {
-    // Nếu server đang bật và báo lỗi (VD: 409 chồng giờ chiếu, 400, 403) thì báo lỗi ngay
+    // Nếu server báo lỗi (VD: 409 trùng giờ chiếu, 400, 401, 403) thì hiển thị ngay
     if (error.response) {
       const serverData = error.response.data || {};
-      const message =
-        serverData.message || 'Không thể tạo suất chiếu. Vui lòng thử lại.';
-      const apiError = new Error(message);
-      apiError.status = error.response.status;
-      throw apiError;
+       
+      throw new Error(
+        serverData.message || 'Không thể tạo suất chiếu. Vui lòng thử lại.'
+      );
     }
 
-    // Fallback khi server tắt: kiểm tra chồng giờ trực tiếp trong dữ liệu cục bộ
+    // Fallback khi server chưa bật
     const currentList = readLocalShowtimes();
     const conflict = findOverlappingShowtime(payload, currentList);
 
     if (conflict) {
-      const overlapError = new Error(
+      throw new Error(
         `Phòng chiếu đã bị trùng giờ với phim "${conflict.movieTitle}" (${conflict.time} → ${conflict.endTime}). Vui lòng chọn giờ hoặc phòng khác!`
       );
-      overlapError.status = 409;
-      throw overlapError;
     }
 
-    // Không bị trùng giờ -> tạo mã suất chiếu mới và lưu vào localStorage
-    const newId = `st-${Date.now()}`;
     const newShowtime = {
-      id: newId,
-      ...payload,
+      id: `st-${Date.now()}`,
+      movieId: payload.movieId,
+      roomId: payload.roomId,
+      date: payload.date,
+      time: payload.startTime,
+      startTime: payload.startTime,
+      basePrice: price,
+      price,
+      vipSurcharge,
       bookedSeats: [],
     };
 
-    const updatedList = [newShowtime, ...currentList];
-    saveLocalShowtimes(updatedList);
-
-    return enrichShowtime(newShowtime);
+    saveLocalShowtimes([newShowtime, ...currentList]);
+    return normalizeShowtime(newShowtime);
   }
 };
 
-// 4. Cập nhật suất chiếu đã có (có kiểm tra chống trùng giờ với các suất khác)
+// 4. Cập nhật suất chiếu (PUT /api/showtimes/:id)
 export const updateShowtime = async (showtimeId, formData) => {
   const url = `${API_BASE_URL}/showtimes/${showtimeId}`;
-  const basePrice = Number(formData.basePrice);
+  const price = Number(formData.basePrice);
   const vipPrice = Number(formData.vipPrice);
+  const vipSurcharge = Math.max(0, vipPrice - price);
 
   const payload = {
     movieId: formData.movieId,
     roomId: formData.roomId,
     date: formData.date,
-    time: formData.time,
-    basePrice,
-    vipPrice,
-    vipSurcharge: Math.max(0, vipPrice - basePrice),
+    startTime: formData.time,
+    price,
+    vipSurcharge,
   };
 
   try {
     const response = await axios.put(url, payload, getRequestConfig());
-    const data = response.data;
-    const updated = data.showtime || data.data || data;
-    return enrichShowtime(updated);
+    const updated = response.data.data || response.data;
+    return normalizeShowtime(updated);
   } catch (error) {
     if (error.response) {
       const serverData = error.response.data || {};
-      const message =
-        serverData.message || 'Không thể cập nhật suất chiếu. Vui lòng thử lại.';
-      const apiError = new Error(message);
-      apiError.status = error.response.status;
-      throw apiError;
+      throw new Error(
+        serverData.message || 'Không thể cập nhật suất chiếu. Vui lòng thử lại.'
+      );
     }
 
     const currentList = readLocalShowtimes();
     const conflict = findOverlappingShowtime(payload, currentList, showtimeId);
 
     if (conflict) {
-      const overlapError = new Error(
+      throw new Error(
         `Phòng chiếu đã bị trùng giờ với phim "${conflict.movieTitle}" (${conflict.time} → ${conflict.endTime}). Vui lòng chọn giờ hoặc phòng khác!`
       );
-      overlapError.status = 409;
-      throw overlapError;
     }
 
-    let updatedItem = null;
+    let updatedRaw = null;
     const updatedList = currentList.map((item) => {
       if (String(item.id) === String(showtimeId)) {
-        updatedItem = { ...item, ...payload };
-        return updatedItem;
+        updatedRaw = {
+          ...item,
+          movieId: payload.movieId,
+          roomId: payload.roomId,
+          date: payload.date,
+          time: payload.startTime,
+          startTime: payload.startTime,
+          basePrice: price,
+          price,
+          vipSurcharge,
+        };
+        return updatedRaw;
       }
       return item;
     });
 
-    if (!updatedItem) {
-      throw new Error('Không tìm thấy suất chiếu cần chỉnh sửa.', { cause: error });
+    if (!updatedRaw) {
+      throw new Error('Không tìm thấy suất chiếu cần chỉnh sửa.');
     }
 
     saveLocalShowtimes(updatedList);
-    return enrichShowtime(updatedItem);
+    return normalizeShowtime(updatedRaw);
   }
 };
 
-// 5. Xóa suất chiếu theo ID
+// 5. Xóa suất chiếu (DELETE /api/showtimes/:id)
 export const deleteShowtime = async (showtimeId) => {
   const url = `${API_BASE_URL}/showtimes/${showtimeId}`;
 
@@ -387,17 +440,17 @@ export const deleteShowtime = async (showtimeId) => {
   } catch (error) {
     if (error.response) {
       const serverData = error.response.data || {};
-      const message =
-        serverData.message || 'Không thể xóa suất chiếu. Vui lòng thử lại.';
-      throw new Error(message, { cause: error });
+      throw new Error(
+        serverData.message || 'Không thể xóa suất chiếu. Vui lòng thử lại.'
+      );
     }
 
     const currentList = readLocalShowtimes();
-    const updatedList = currentList.filter((item) => {
+    const remaining = currentList.filter((item) => {
       return String(item.id) !== String(showtimeId);
     });
 
-    saveLocalShowtimes(updatedList);
+    saveLocalShowtimes(remaining);
     return true;
   }
 };
