@@ -1,0 +1,15 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Backend server for PTIT Cinema",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/seeder.js"
+  },
+  "keywords": ["ptit", "cinema", "booking"],
+  "author": "",
+  "license": "ISC"
+}

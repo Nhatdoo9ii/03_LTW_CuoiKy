@@ -3,6 +3,7 @@ import styles from '../../../pages/admin/AdminMoviesPage.module.css';
 
 function MovieTable({
   movies,
+  onEditMovie,
   onDeleteMovie,
   currentPage,
   totalPages,
@@ -79,6 +80,14 @@ function MovieTable({
                     </span>
                   </td>
                   <td className={styles.actionCell}>
+                    <button
+                      type="button"
+                      onClick={() => onEditMovie(movie)}
+                      className={styles.editBtn}
+                      title="Chỉnh sửa thông tin phim"
+                    >
+                      Sửa
+                    </button>
                     <button
                       type="button"
                       onClick={() => onDeleteMovie(movie.id, movie.title)}
