@@ -1,1 +1,0 @@
-const AdminShowtimesPage = () => <h2>Admin - Quản lý Suất chiếu (TV2)</h2>; export default AdminShowtimesPage;
