@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import CountdownTimer from '../../../components/booking/coutdowntimer/CountdownTimer';
 import PaymentMethodSelector from '../../../components/tickets-admin/paymentmethod/PaymentMethodSelector';
+import PaymentQrModal from '../../../components/tickets-admin/qrmodal/PaymentQrModal';
 import {
   AVAILABLE_COMBOS,
   applyPromoCode,
@@ -161,12 +162,15 @@ const CheckoutPage = () => {
   const appliedPromo = useSelector(selectAppliedPromo);
 
   // State thông tin người nhận vé (tự động điền sẵn từ tài khoản đang đăng nhập)
-  const [fullName, setFullName] = useState(user && user.fullName ? user.fullName : '');
+  const [fullName, setFullName] = useState(
+    user && user.fullName ? user.fullName : ''
+  );
   const [phone, setPhone] = useState(user && user.phone ? user.phone : '');
   const [email, setEmail] = useState(user && user.email ? user.email : '');
   const [formErrors, setFormErrors] = useState({});
 
-  // State phương thức thanh toán (mặc định Ví MoMo)
+  // State phương thức thanh toán và bật/tắt popup QR
+  const [showQrModal, setShowQrModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('MoMo');
 
   // State cho khu vực đổi mã khuyến mãi
@@ -270,23 +274,13 @@ const CheckoutPage = () => {
     setPromoStatus({ type: '', message: '' });
   };
 
-  // Xử lý gửi đơn đặt vé khi bấm "Xác nhận thanh toán"
-  const handleConfirmPayment = async (event) => {
-    event.preventDefault();
+  // Hàm thực sự gửi đơn đặt vé lên service (gọi trực tiếp nếu Tại quầy, hoặc sau khi xác nhận QR)
+  const submitBookingOrder = async () => {
     setSubmitError('');
     setConflictSeats([]);
-
-    // Bước 1: Kiểm tra hợp lệ họ tên, số điện thoại, email
-    const errors = validateCustomerForm(fullName, phone, email);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      // Bước 2: Chuẩn bị dữ liệu đơn hàng để gửi lên bookingService
       const payload = {
         userId: user && user.id ? user.id : 'u1',
         customerName: fullName.trim(),
@@ -311,11 +305,9 @@ const CheckoutPage = () => {
         paymentMethod,
       };
 
-      // Bước 3: Gọi service tạo vé (gọi API server hoặc lưu localStorage nếu server tắt)
       const result = await createBooking(payload);
       const createdBooking = result.booking;
 
-      // Bước 4: Lưu vé vừa đặt vào Redux và chuyển sang trang Đặt vé thành công
       setHasCompleted(true);
       dispatch(setLastCompletedBooking(createdBooking));
       navigate(`/booking-success/${createdBooking.id}`, {
@@ -334,6 +326,28 @@ const CheckoutPage = () => {
       }
     } finally {
       setIsSubmitting(false);
+      setShowQrModal(false);
+    }
+  };
+
+  // Xử lý khi bấm nút "Xác nhận thanh toán"
+  const handleConfirmPayment = async (event) => {
+    event.preventDefault();
+    setSubmitError('');
+    setConflictSeats([]);
+
+    // Bước 1: Kiểm tra hợp lệ họ tên, số điện thoại, email
+    const errors = validateCustomerForm(fullName, phone, email);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    // Bước 2: Tại quầy thì tạo đơn ngay; MoMo / Ngân hàng thì mở popup quét mã QR
+    if (paymentMethod === 'Tại quầy') {
+      await submitBookingOrder();
+    } else {
+      setShowQrModal(true);
     }
   };
 
@@ -828,6 +842,17 @@ const CheckoutPage = () => {
           </aside>
         </form>
       </div>
+
+      {/* Popup quét mã QR thanh toán cho MoMo và Ngân hàng nội địa */}
+      <PaymentQrModal
+        isOpen={showQrModal}
+        paymentMethod={paymentMethod}
+        totalPrice={totalPrice}
+        customerPhone={phone}
+        isSubmitting={isSubmitting}
+        onConfirmPaid={submitBookingOrder}
+        onClose={() => setShowQrModal(false)}
+      />
     </section>
   );
 };

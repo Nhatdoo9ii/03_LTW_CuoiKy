@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertCircle, Plus, RotateCcw, Save, X } from 'lucide-react';
-import { calculateEndTime } from '../../services/showtimeService';
+import { calculateEndTime } from '../../../services/showtimeService';
 import styles from './ShowtimeForm.module.css';
 
 // Hàm phụ: lấy ngày hôm nay định dạng YYYY-MM-DD làm giá trị mặc định

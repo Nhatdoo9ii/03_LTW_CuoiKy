@@ -1,3 +1,24 @@
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Plus Jakarta Sans', inherit;
+  color: var(--text-heading);
+}
+
+.toastBanner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  color: var(--color-success);
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .errorBanner {
   padding: 12px 16px;
   border-radius: 12px;
@@ -9,6 +30,492 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Header tiêu đề + 4 viên thuốc thống kê */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.25;
+}
+
+.statPills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.statPill {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pillPrimaryText {
+  color: var(--color-primary);
+}
+
+.pillIcon {
+  color: var(--text-muted);
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.dotGreen {
+  background-color: var(--color-success);
+}
+
+.dotOrange {
+  background-color: var(--color-warning);
+}
+
+/* Khu vực danh sách phòng hiện hành */
+.listSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.listTitle {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+.listControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.searchBox {
+  position: relative;
+  width: 240px;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 32px 0 35px;
+  border-radius: 11px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.84rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.clearSearchBtn {
+  position: absolute;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.techFilterSelect {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 11px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.techFilterSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Lưới thẻ phòng 2 cột (Card Grid) */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.roomCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 20px 22px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.roomCard:hover {
+  border-color: rgba(225, 29, 72, 0.35);
+}
+
+.roomCardEditing {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.12);
+}
+
+/* Phần đầu thẻ phòng */
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitleGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.statusActive {
+  background-color: rgba(22, 163, 74, 0.12);
+  color: var(--color-success);
+}
+
+.statusMaintenance {
+  background-color: rgba(234, 88, 12, 0.14);
+  color: var(--color-warning);
+}
+
+.roomName {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.3;
+}
+
+.numberBadge {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 3 ô thông số cấu hình / sức chứa / ghế VIP */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metricBox {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metricLabel {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.metricValue {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.35;
+}
+
+.metricValueVip {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #b45309;
+  line-height: 1.35;
+}
+
+:global(html[data-theme='dark']) .metricValueVip {
+  color: #fbbf24;
+}
+
+/* Hàng phân bố VIP */
+.vipRowList {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vipRowLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.vipTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vipTag {
+  padding: 3px 9px;
+  border-radius: 7px;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+:global(html[data-theme='dark']) .vipTag {
+  background-color: #453210;
+  border-color: #d97706;
+  color: #fcd34d;
+}
+
+.noVipText {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* 3 nút thao tác: Sửa, Bảo trì, Xóa */
+.cardActions {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actionBtn {
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.actionBtn:hover:not(:disabled) {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.actionBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.maintenanceBtn {
+  color: #b45309;
+}
+
+.maintenanceBtn:hover:not(:disabled) {
+  border-color: #f59e0b;
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+:global(html[data-theme='dark']) .maintenanceBtn {
+  color: #fbbf24;
+}
+
+:global(html[data-theme='dark']) .maintenanceBtn:hover:not(:disabled) {
+  background-color: #453210;
+  color: #fcd34d;
+}
+
+.activateBtn {
+  color: var(--color-success);
+}
+
+.activateBtn:hover:not(:disabled) {
+  border-color: var(--color-success);
+  background-color: rgba(22, 163, 74, 0.12);
+  color: var(--color-success);
+}
+
+.deleteBtn {
+  color: var(--color-primary);
+}
+
+.deleteBtn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Trạng thái rỗng & phân trang */
+.emptyBox {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 44px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.emptyTitle {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 6px;
+}
+
+.emptySub {
+  font-size: 0.84rem;
+}
+
+.paginationWrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Modal xác nhận xóa */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modalBox {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.2);
+}
+
+.modalTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+
+.modalDesc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.modalInfoBox {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  color: var(--text-body);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+
+.modalInfoBox strong {
+  color: var(--text-heading);
 }
 
 .modalError {
@@ -27,4 +534,66 @@
 .modalError svg {
   margin-top: 2px;
   flex-shrink: 0;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancelModalBtn,
+.confirmDeleteBtn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelModalBtn {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+}
+
+.confirmDeleteBtn {
+  border: none;
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.confirmDeleteBtn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+@media (max-width: 960px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageTitle {
+    font-size: 1.45rem;
+  }
+
+  .listControls {
+    width: 100%;
+  }
+
+  .searchBox,
+  .techFilterSelect {
+    width: 100%;
+  }
+
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .paginationWrap {
+    justify-content: center;
+  }
 }

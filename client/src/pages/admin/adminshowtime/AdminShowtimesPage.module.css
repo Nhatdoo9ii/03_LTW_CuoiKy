@@ -6,13 +6,25 @@
   color: var(--text-heading);
 }
 
-/* Thông báo nhanh khi thao tác thành công */
 .toastBanner {
   padding: 12px 16px;
   border-radius: 12px;
   background-color: rgba(22, 163, 74, 0.12);
   border: 1px solid rgba(22, 163, 74, 0.3);
   color: var(--color-success);
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.errorBanner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: var(--color-primary-light);
+  border: 1px solid rgba(225, 29, 72, 0.35);
+  color: var(--color-primary);
   font-size: 0.86rem;
   font-weight: 700;
   display: flex;
@@ -110,11 +122,11 @@
 }
 
 .iconBlue {
-  background-color: var(--bg-subtle);
+  background-color: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
 }
 
-/* Khối bảng danh sách */
+/* Khối bộ lọc và bảng danh sách suất chiếu */
 .tableCard {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -126,7 +138,6 @@
   gap: 16px;
 }
 
-/* Bộ lọc ngày */
 .filterToolbar {
   display: flex;
   align-items: center;
@@ -137,13 +148,14 @@
 
 .dateTabs {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .dateTab {
-  height: 38px;
-  padding: 0 15px;
+  height: 36px;
+  padding: 0 14px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-subtle);
@@ -153,9 +165,9 @@
   font-weight: 700;
   cursor: pointer;
   transition:
-    background-color 0.16s ease,
-    border-color 0.16s ease,
-    color 0.16s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .dateTab:hover {
@@ -184,23 +196,23 @@
 }
 
 .datePickerInput {
-  height: 38px;
-  padding: 0 12px 0 32px;
+  height: 36px;
+  padding: 0 12px 0 34px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-subtle);
   color: var(--text-heading);
   font-family: 'Plus Jakarta Sans', inherit;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
 .datePickerInput:focus {
   outline: none;
   border-color: var(--color-primary);
+  background-color: var(--bg-surface);
 }
 
-/* Hàng tìm kiếm */
 .searchRow {
   display: flex;
   align-items: center;
@@ -211,14 +223,14 @@
 
 .searchBox {
   position: relative;
-  width: min(380px, 100%);
+  width: min(360px, 100%);
   display: flex;
   align-items: center;
 }
 
 .searchIcon {
   position: absolute;
-  left: 13px;
+  left: 12px;
   color: var(--text-muted);
   pointer-events: none;
 }
@@ -226,8 +238,8 @@
 .searchInput {
   width: 100%;
   height: 40px;
-  padding: 0 34px 0 38px;
-  border-radius: 11px;
+  padding: 0 34px 0 36px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-subtle);
   color: var(--text-heading);
@@ -247,17 +259,12 @@
   width: 24px;
   height: 24px;
   border: none;
-  border-radius: 50%;
-  background-color: transparent;
+  background: transparent;
   color: var(--text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-}
-
-.clearSearchBtn:hover {
-  color: var(--color-primary);
 }
 
 .resultCount {
@@ -289,7 +296,7 @@
 
 .showtimeTable {
   width: 100%;
-  min-width: 900px;
+  min-width: 920px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -318,7 +325,7 @@
 }
 
 .showtimeTable tbody td {
-  padding: 16px 14px;
+  padding: 14px;
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
@@ -331,7 +338,7 @@
   background-color: var(--color-primary-light) !important;
 }
 
-/* Ô mã suất */
+/* Cột mã suất */
 .codeCell {
   display: flex;
   flex-direction: column;
@@ -342,28 +349,33 @@
   font-size: 0.84rem;
   font-weight: 800;
   color: var(--color-primary);
+  white-space: nowrap;
 }
 
 .dateSub {
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
-/* Ô thông tin phim */
+/* Cột thông tin phim */
 .movieCell {
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 260px;
 }
 
 .posterThumb {
   position: relative;
   width: 44px;
-  height: 60px;
+  height: 62px;
   border-radius: 8px;
   overflow: hidden;
   background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -371,18 +383,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
 .posterFallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 0.65rem;
   font-weight: 800;
-  color: var(--color-primary);
+  color: var(--text-muted);
 }
 
 .ageTag {
@@ -391,10 +397,11 @@
   left: 3px;
   padding: 1px 4px;
   border-radius: 4px;
-  background-color: var(--color-primary);
+  background-color: rgba(15, 23, 42, 0.82);
   color: #ffffff;
-  font-size: 0.56rem;
+  font-size: 0.6rem;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .movieMeta {
@@ -405,18 +412,18 @@
 }
 
 .movieTitle {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 800;
   color: var(--text-heading);
   line-height: 1.3;
 }
 
 .movieSub {
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
 }
 
-/* Ô phòng & định dạng */
+/* Cột phòng & định dạng */
 .roomCell {
   display: flex;
   flex-direction: column;
@@ -425,66 +432,85 @@
 }
 
 .roomName {
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.86rem;
+  font-weight: 800;
   color: var(--text-heading);
 }
 
 .formatBadge {
+  display: inline-block;
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 0.68rem;
   font-weight: 800;
-}
-
-.formatImax {
-  background-color: #0f172a;
-  color: #ffffff;
-}
-
-.formatDolby {
-  background-color: #dbeafe;
-  color: #1d4ed8;
-}
-
-.formatVip {
-  background-color: #fef3c7;
-  color: #b45309;
+  white-space: nowrap;
 }
 
 .formatStandard {
   background-color: var(--bg-subtle);
-  color: var(--text-body);
   border: 1px solid var(--border-color);
+  color: var(--text-body);
+}
+
+.formatImax {
+  background-color: rgba(59, 130, 246, 0.14);
+  color: #2563eb;
+}
+
+.formatVip {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.formatDolby {
+  background-color: rgba(139, 92, 246, 0.14);
+  color: #7c3aed;
+}
+
+:global(html[data-theme='dark']) .formatImax {
+  color: #60a5fa;
+}
+
+:global(html[data-theme='dark']) .formatVip {
+  background-color: #453210;
+  color: #fcd34d;
+}
+
+:global(html[data-theme='dark']) .formatDolby {
+  color: #a78bfa;
 }
 
 .capacityText {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
 }
 
-/* Ô khung giờ */
+/* Cột khung giờ */
 .timeCell {
   display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
 }
 
 .startTime {
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: var(--text-heading);
 }
 
-.timeArrow,
-.endTime {
-  font-size: 0.8rem;
+.timeArrow {
   color: var(--text-muted);
-  font-weight: 600;
+  font-size: 0.8rem;
 }
 
-/* Ô giá vé */
+.endTime {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Cột giá vé */
 .priceCell {
   display: flex;
   flex-direction: column;
@@ -493,30 +519,35 @@
 }
 
 .basePrice {
-  font-size: 0.84rem;
-  font-weight: 700;
+  font-size: 0.86rem;
+  font-weight: 800;
   color: var(--text-heading);
 }
 
 .vipPrice {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: #b45309;
 }
 
-/* Ô tỷ lệ bán & trạng thái */
+:global(html[data-theme='dark']) .vipPrice {
+  color: #fbbf24;
+}
+
+/* Cột tỷ lệ bán & trạng thái */
 .occupancyCell {
-  min-width: 155px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 150px;
 }
 
 .occupancyTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.75rem;
+  gap: 8px;
+  font-size: 0.76rem;
 }
 
 .seatRatio {
@@ -531,9 +562,9 @@
 
 .progressTrack {
   width: 100%;
-  height: 6px;
+  height: 7px;
   border-radius: 999px;
-  background-color: var(--border-color);
+  background-color: var(--bg-subtle);
   overflow: hidden;
 }
 
@@ -541,6 +572,10 @@
   height: 100%;
   border-radius: 999px;
   transition: width 0.25s ease;
+}
+
+.progressBlue {
+  background-color: #3b82f6;
 }
 
 .progressRed {
@@ -551,35 +586,23 @@
   background-color: var(--color-success);
 }
 
-.progressBlue {
-  background-color: #334155;
-}
-
 .progressMuted {
   background-color: var(--text-muted);
 }
 
 .statusBadge {
+  display: inline-block;
   align-self: flex-start;
   padding: 2px 9px;
   border-radius: 999px;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .statusOpen {
-  background-color: #e0f2fe;
-  color: #0369a1;
-}
-
-.statusAlmostFull {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.statusSoldout {
-  background-color: var(--color-primary);
-  color: #ffffff;
+  background-color: rgba(59, 130, 246, 0.14);
+  color: #2563eb;
 }
 
 .statusPlaying {
@@ -587,12 +610,22 @@
   color: var(--color-success);
 }
 
+.statusAlmostFull,
+.statusSoldout {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
 .statusFinished {
   background-color: var(--bg-subtle);
   color: var(--text-muted);
 }
 
-/* Cột nút sửa / xóa */
+:global(html[data-theme='dark']) .statusOpen {
+  color: #60a5fa;
+}
+
+/* Cột thao tác */
 .rowActions {
   display: inline-flex;
   align-items: center;
@@ -612,10 +645,6 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease;
 }
 
 .editBtn:hover {
@@ -697,11 +726,29 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .modalInfoBox strong {
   color: var(--text-heading);
+}
+
+.modalError {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.modalError svg {
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .modalActions {
@@ -739,7 +786,7 @@
 
 @media (max-width: 768px) {
   .pageTitle {
-    font-size: 1.4rem;
+    font-size: 1.45rem;
   }
 
   .statsGrid {
