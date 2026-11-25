@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import mockData from '../../data/mockData.json';
+import useFetch from '../../hooks/useFetch';
+import { normalizeMovie } from '../../services/movieService';
 import MovieDetailHero from '../../components/movies/MovieDetailHero';
 import ShowtimeSelector from '../../components/movies/ShowtimeSelector';
 import TrailerModal from '../../components/movies/TrailerModal';
@@ -20,20 +22,50 @@ function MovieDetailPage() {
   const [selectedDate, setSelectedDate] = useState(SHOW_DATES[0].id);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
 
-  // Tìm phim từ mockData.json theo URL param :id
+  // Gọi API lấy chi tiết phim + suất chiếu bằng custom hook useFetch
+  const { data: apiResponse, loading } = useFetch(`/movies/${id}`);
+
+  // Ưu tiên dữ liệu từ MongoDB API, fallback sang mockData nếu server offline hoặc dùng id mẫu cũ
   const movie = useMemo(() => {
+    if (apiResponse?.data?.movie) {
+      return normalizeMovie(apiResponse.data.movie);
+    }
     return (
       mockData.movies.find((item) => item.id === id) || mockData.movies[0]
     );
-  }, [id]);
+  }, [apiResponse, id]);
 
-  // Lấy danh sách suất chiếu theo phim & ngày, ghép tên phòng từ mockData.rooms
+  // Lấy danh sách suất chiếu theo phim & ngày
   const availableShowtimes = useMemo(() => {
+    const apiShowtimes = apiResponse?.data?.showtimes;
+
+    if (Array.isArray(apiShowtimes) && apiShowtimes.length > 0) {
+      const matchedApi = apiShowtimes.filter((st) => st.date === selectedDate);
+      if (matchedApi.length > 0) {
+        return matchedApi.map((st) => {
+          const room = st.roomId || {};
+          const totalSeats =
+            (room.totalRows || 8) * (room.seatsPerRow || 10);
+          const bookedCount = st.bookedSeats ? st.bookedSeats.length : 0;
+
+          return {
+            ...st,
+            id: st._id || st.id,
+            time: st.startTime || st.time,
+            basePrice: st.price || st.basePrice,
+            roomName: room.name || 'Phòng chiếu 01',
+            totalSeats,
+            availableSeats: totalSeats - bookedCount,
+          };
+        });
+      }
+    }
+
     const matched = mockData.showtimes.filter(
       (st) => st.movieId === movie.id && st.date === selectedDate
     );
 
-    // Nếu phim đang chiếu chưa có lịch riêng trong mockData.showtimes, tạo suất mẫu để test đặt vé
+    // Nếu phim đang chiếu chưa có lịch riêng, tạo suất mẫu để test đặt vé
     const rawList =
       matched.length > 0
         ? matched
@@ -84,7 +116,7 @@ function MovieDetailPage() {
         availableSeats: room.totalSeats - bookedCount,
       };
     });
-  }, [movie.id, selectedDate]);
+  }, [apiResponse, movie.id, selectedDate]);
 
   // Chuyển sang trang chọn ghế /booking/:showtimeId
   const handleSelectSlot = (slot) => {
@@ -95,6 +127,14 @@ function MovieDetailPage() {
       },
     });
   };
+
+  if (loading && !apiResponse) {
+    return (
+      <div style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+        Đang tải thông tin chi tiết phim...
+      </div>
+    );
+  }
 
   return (
     <div>
