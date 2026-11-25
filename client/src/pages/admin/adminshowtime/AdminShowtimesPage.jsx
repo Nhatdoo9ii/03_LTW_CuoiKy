@@ -9,7 +9,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import ShowtimeForm from '../../components/tickets-admin/ShowtimeForm';
+import ShowtimeForm from '../../../components/tickets-admin/showtimeform/ShowtimeForm';
 import Pagination from '../../../components/common/Pagination';
 import { useDebounce } from '../../../hooks/useDebounce';
 import {
