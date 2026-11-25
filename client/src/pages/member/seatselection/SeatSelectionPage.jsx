@@ -8,10 +8,10 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import SeatGrid from '../../components/booking/SeatGrid';
-import CountdownTimer from '../../components/booking/CountdownTimer';
-import BookingSummary from '../../components/booking/BookingSummary';
+import { useAuth } from '../../../context/AuthContext';
+import SeatGrid from '../../../components/booking/seatgrid/SeatGrid';
+import CountdownTimer from '../../../components/booking/coutdowntimer/CountdownTimer';
+import BookingSummary from '../../../components/booking/bookingsummary/BookingSummary';
 import {
   DEFAULT_PTIT_PROMO,
   MAX_SEATS_PER_BOOKING,
@@ -22,8 +22,8 @@ import {
   selectSeatLimitWarning,
   selectSelectedSeats,
   toggleSeat,
-} from '../../store/bookingSlice';
-import { getShowtimeDetail } from '../../services/bookingService';
+} from '../../../store/bookingSlice';
+import { getShowtimeDetail } from '../../../services/bookingService';
 import styles from './SeatSelectionPage.module.css';
 
 // Hàm phụ: kiểm tra tài khoản hiện tại có phải sinh viên/cán bộ PTIT không

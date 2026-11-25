@@ -1,5 +1,5 @@
 import { Check, DoorOpen, Star, Video, X } from 'lucide-react';
-import SeatItem from './SeatItem';
+import SeatItem from '../seatitem/SeatItem';
 import styles from './SeatGrid.module.css';
 
 // Hàm phụ: chuyển mảng ghế (dạng chuỗi hoặc object) sang mảng mã chữ in hoa (VD: ['F5', 'F6'])

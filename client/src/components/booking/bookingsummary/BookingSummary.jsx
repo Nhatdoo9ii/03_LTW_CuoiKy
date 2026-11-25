@@ -11,8 +11,8 @@ import {
   selectSelectedCombos,
   selectSelectedSeats,
   toggleSeat,
-} from '../../store/bookingSlice';
-import { validatePromoCode } from '../../services/bookingService';
+} from '../../../store/bookingSlice';
+import { validatePromoCode } from '../../../services/bookingService';
 import styles from './BookingSummary.module.css';
 
 // Hàm phụ: đổi ngày "2026-11-18" thành "Thứ Tư, 18/11/2026"
@@ -144,6 +144,7 @@ const BookingSummary = ({ showtimeInfo, onProceed }) => {
   // Xử lý bấm nút "Gỡ mã" ưu đãi
   const handleRemovePromo = () => {
     dispatch(removePromoCode());
+    setPromoInput('');
     setPromoFeedback({
       type: '',
       message: '',

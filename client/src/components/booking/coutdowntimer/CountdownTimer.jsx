@@ -1,13 +1,13 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
-import { useCountdown } from '../../hooks/useCountdown';
+import { useCountdown } from '../../../hooks/useCountdown';
 import {
   HOLD_DURATION_SECONDS,
   expireBookingHold,
   selectHoldExpiresAt,
   selectShowtimeInfo,
-} from '../../store/bookingSlice';
+} from '../../../store/bookingSlice';
 import styles from './CountdownTimer.module.css';
 
 // Component đồng hồ đếm ngược 5 phút (dùng cho cả trang Chọn ghế và trang Thanh toán)

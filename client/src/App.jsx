@@ -15,7 +15,7 @@ import PromotionPage from './pages/public/PromotionPage';
 
 import SeatSelectionPage from './pages/member/seatselection/SeatSelectionPage';
 import CheckoutPage from './pages/member/checkout/CheckoutPage';
-import BookingSuccessPage from './pages/member/BookingSuccessPage';
+import BookingSuccessPage from './pages/member/bookingsuccess/BookingSuccessPage';
 import MyTicketsPage from './pages/member/MyTicketsPage';
 
 import AdminMoviesPage from './pages/admin/AdminMoviesPage';

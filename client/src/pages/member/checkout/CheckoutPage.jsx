@@ -17,9 +17,9 @@ import {
   Ticket,
   UserCheck,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import CountdownTimer from '../../components/booking/CountdownTimer';
-import PaymentMethodSelector from '../../components/tickets-admin/PaymentMethodSelector';
+import { useAuth } from '../../../context/AuthContext';
+import CountdownTimer from '../../../components/booking/coutdowntimer/CountdownTimer';
+import PaymentMethodSelector from '../../../components/tickets-admin/PaymentMethodSelector';
 import {
   AVAILABLE_COMBOS,
   applyPromoCode,
@@ -32,11 +32,11 @@ import {
   selectShowtimeInfo,
   setLastCompletedBooking,
   updateComboQuantity,
-} from '../../store/bookingSlice';
+} from '../../../store/bookingSlice';
 import {
   createBooking,
   validatePromoCode,
-} from '../../services/bookingService';
+} from '../../../services/bookingService';
 import styles from './CheckoutPage.module.css';
 
 // Hàm phụ: đổi ngày "2026-11-18" sang "Thứ Tư, 18/11/2026"
