@@ -1,0 +1,757 @@
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  font-family: 'Plus Jakarta Sans', inherit;
+  color: var(--text-heading);
+}
+
+/* Thông báo nhanh khi thao tác thành công */
+.toastBanner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  color: var(--color-success);
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Tiêu đề trang */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.25;
+}
+
+.pageSubtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* 3 Thẻ thống kê nhanh */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.statCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.statText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.statNumberRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.statValue {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1;
+}
+
+.statUnit {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.statIconBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconRed {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.iconGreen {
+  background-color: rgba(22, 163, 74, 0.14);
+  color: var(--color-success);
+}
+
+.iconBlue {
+  background-color: var(--bg-subtle);
+  color: #3b82f6;
+}
+
+/* Khối bảng danh sách */
+.tableCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Bộ lọc ngày */
+.filterToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dateTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dateTab {
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-body);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.dateTab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.dateTabActive,
+.dateTabActive:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.datePickerWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.datePickerIcon {
+  position: absolute;
+  left: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.datePickerInput {
+  height: 38px;
+  padding: 0 12px 0 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.datePickerInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Hàng tìm kiếm */
+.searchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.searchBox {
+  position: relative;
+  width: min(380px, 100%);
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 13px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 34px 0 38px;
+  border-radius: 11px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.84rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: var(--bg-surface);
+}
+
+.clearSearchBtn {
+  position: absolute;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.clearSearchBtn:hover {
+  color: var(--color-primary);
+}
+
+.resultCount {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.resultCount strong {
+  color: var(--text-heading);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Bảng suất chiếu */
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.showtimeTable {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.showtimeTable thead th {
+  padding: 12px 14px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.showtimeTable thead th:first-child {
+  border-top-left-radius: 10px;
+}
+
+.showtimeTable thead th:last-child {
+  border-top-right-radius: 10px;
+}
+
+.actionsColHeader {
+  text-align: center;
+}
+
+.showtimeTable tbody td {
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.showtimeTable tbody tr:hover {
+  background-color: var(--bg-subtle);
+}
+
+.editingRow {
+  background-color: var(--color-primary-light) !important;
+}
+
+/* Ô mã suất */
+.codeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.showtimeCode {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.dateSub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+/* Ô thông tin phim */
+.movieCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 260px;
+}
+
+.posterThumb {
+  position: relative;
+  width: 44px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-subtle);
+  flex-shrink: 0;
+}
+
+.posterImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.posterFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.ageTag {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.56rem;
+  font-weight: 800;
+}
+
+.movieMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.movieTitle {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.3;
+}
+
+.movieSub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+/* Ô phòng & định dạng */
+.roomCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.roomName {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.formatBadge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.formatImax {
+  background-color: #0f172a;
+  color: #ffffff;
+}
+
+.formatDolby {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.formatVip {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.formatStandard {
+  background-color: var(--bg-subtle);
+  color: var(--text-body);
+  border: 1px solid var(--border-color);
+}
+
+.capacityText {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Ô khung giờ */
+.timeCell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.startTime {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+.timeArrow,
+.endTime {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Ô giá vé */
+.priceCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.basePrice {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.vipPrice {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* Ô tỷ lệ bán & trạng thái */
+.occupancyCell {
+  min-width: 155px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.occupancyTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.seatRatio {
+  color: var(--text-body);
+  font-weight: 600;
+}
+
+.fillPercentText {
+  color: var(--text-heading);
+  font-weight: 800;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--border-color);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.progressRed {
+  background-color: var(--color-primary);
+}
+
+.progressGreen {
+  background-color: var(--color-success);
+}
+
+.progressBlue {
+  background-color: #334155;
+}
+
+.progressMuted {
+  background-color: var(--text-muted);
+}
+
+.statusBadge {
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.statusOpen {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.statusAlmostFull {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.statusSoldout {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.statusPlaying {
+  background-color: rgba(22, 163, 74, 0.14);
+  color: var(--color-success);
+}
+
+.statusFinished {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+/* Cột nút sửa / xóa */
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.editBtn,
+.deleteBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.editBtn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.deleteBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+/* Trạng thái rỗng & phân trang */
+.emptyBox {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.emptyTitle {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 6px;
+}
+
+.emptySub {
+  font-size: 0.84rem;
+}
+
+.paginationWrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Modal xác nhận xóa */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modalBox {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.2);
+}
+
+.modalTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+
+.modalDesc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.modalInfoBox {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  color: var(--text-body);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.modalInfoBox strong {
+  color: var(--text-heading);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancelModalBtn,
+.confirmDeleteBtn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelModalBtn {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+}
+
+.confirmDeleteBtn {
+  border: none;
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.confirmDeleteBtn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+@media (max-width: 768px) {
+  .pageTitle {
+    font-size: 1.4rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tableCard {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .paginationWrap {
+    justify-content: center;
+  }
+}
