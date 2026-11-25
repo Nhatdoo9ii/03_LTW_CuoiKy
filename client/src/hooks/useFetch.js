@@ -14,12 +14,9 @@ const useFetch = (endpoint, params = null, options = { immediate: true }) => {
 
   const paramsKey = params ? JSON.stringify(params) : '';
 
-  const fetchData = useCallback(
+  const runRequest = useCallback(
     async (signal) => {
       if (!endpoint) return;
-      setLoading(true);
-      setError(null);
-
       try {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -32,6 +29,7 @@ const useFetch = (endpoint, params = null, options = { immediate: true }) => {
         });
 
         setData(response.data);
+        setError(null);
       } catch (err) {
         if (axios.isCancel(err) || err.name === 'CanceledError') return;
         const message =
@@ -50,13 +48,22 @@ const useFetch = (endpoint, params = null, options = { immediate: true }) => {
     if (!options.immediate) return;
 
     const controller = new AbortController();
-    fetchData(controller.signal);
+    Promise.resolve().then(() => {
+      if (!controller.signal.aborted) {
+        runRequest(controller.signal);
+      }
+    });
 
     // Cleanup: hủy request nếu component unmount hoặc params thay đổi
     return () => controller.abort();
-  }, [fetchData, options.immediate]);
+  }, [runRequest, options.immediate]);
 
-  return { data, loading, error, refetch: () => fetchData() };
+  const refetch = () => {
+    setLoading(true);
+    return runRequest();
+  };
+
+  return { data, loading, error, refetch };
 };
 
 export default useFetch;

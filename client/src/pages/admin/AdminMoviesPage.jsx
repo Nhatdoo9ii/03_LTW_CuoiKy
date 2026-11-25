@@ -207,6 +207,7 @@ function AdminMoviesPage() {
 
       {/* 2. Form thêm / sửa phim */}
       <MovieForm
+        key={editingMovie?.id || 'create'}
         onAddMovie={handleAddMovie}
         editingMovie={editingMovie}
         onUpdateMovie={handleUpdateMovie}

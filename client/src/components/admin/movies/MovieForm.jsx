@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from '../../../pages/admin/AdminMoviesPage.module.css';
 
 const AGE_RATINGS = ['P', 'K', 'T13', 'T16', 'T18', 'C'];
@@ -20,37 +20,31 @@ const INITIAL_FORM = {
   status: 'now-showing',
 };
 
-function MovieForm({ onAddMovie, editingMovie, onUpdateMovie, onCancelEdit }) {
-  const [formData, setFormData] = useState(INITIAL_FORM);
-  const [errors, setErrors] = useState({});
+const buildFormState = (movie) => {
+  if (!movie) return INITIAL_FORM;
+  return {
+    title: movie.title || '',
+    originalTitle: movie.originalTitle || '',
+    genres: Array.isArray(movie.genres)
+      ? movie.genres.join(', ')
+      : movie.genres || '',
+    duration: movie.duration ? String(movie.duration) : '',
+    ageRating: movie.ageRating || 'P',
+    releaseDate: movie.releaseDate || '',
+    language: movie.language || 'Tiếng Anh - Phụ đề Tiếng Việt',
+    posterUrl: movie.posterUrl || '',
+    bannerUrl: movie.bannerUrl || '',
+    trailerUrl: movie.trailerUrl || '',
+    director: movie.director || '',
+    actors: movie.actors || '',
+    synopsis: movie.synopsis || '',
+    status: movie.status || 'now-showing',
+  };
+};
 
-  // Đổ dữ liệu lên form khi bấm nút Sửa phim ở bảng
-  useEffect(() => {
-    if (editingMovie) {
-      setFormData({
-        title: editingMovie.title || '',
-        originalTitle: editingMovie.originalTitle || '',
-        genres: Array.isArray(editingMovie.genres)
-          ? editingMovie.genres.join(', ')
-          : editingMovie.genres || '',
-        duration: editingMovie.duration ? String(editingMovie.duration) : '',
-        ageRating: editingMovie.ageRating || 'P',
-        releaseDate: editingMovie.releaseDate || '',
-        language: editingMovie.language || 'Tiếng Anh - Phụ đề Tiếng Việt',
-        posterUrl: editingMovie.posterUrl || '',
-        bannerUrl: editingMovie.bannerUrl || '',
-        trailerUrl: editingMovie.trailerUrl || '',
-        director: editingMovie.director || '',
-        actors: editingMovie.actors || '',
-        synopsis: editingMovie.synopsis || '',
-        status: editingMovie.status || 'now-showing',
-      });
-      setErrors({});
-    } else {
-      setFormData(INITIAL_FORM);
-      setErrors({});
-    }
-  }, [editingMovie]);
+function MovieForm({ onAddMovie, editingMovie, onUpdateMovie, onCancelEdit }) {
+  const [formData, setFormData] = useState(() => buildFormState(editingMovie));
+  const [errors, setErrors] = useState({});
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -53,7 +53,9 @@ export const movieService = {
           source: 'mock',
         };
       }
-      throw new Error(error.response?.data?.message || 'Lỗi tải danh sách phim');
+      throw new Error(error.response?.data?.message || 'Lỗi tải danh sách phim', {
+        cause: error,
+      });
     }
   },
 
@@ -85,7 +87,9 @@ export const movieService = {
           source: 'mock',
         };
       }
-      throw new Error(error.response?.data?.message || 'Không tìm thấy phim');
+      throw new Error(error.response?.data?.message || 'Không tìm thấy phim', {
+        cause: error,
+      });
     }
   },
 

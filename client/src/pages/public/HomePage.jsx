@@ -13,10 +13,21 @@ function HomePage() {
   const location = useLocation();
   const isUpcomingRoute = location.pathname === '/upcoming';
 
-  // Tab trạng thái phim: 'now-showing' | 'coming-soon'
-  const [activeTab, setActiveTab] = useState(
-    isUpcomingRoute ? 'coming-soon' : 'now-showing'
-  );
+  // Tab trạng thái phim: 'now-showing' | 'coming-soon' (tự đồng bộ khi đổi route / hoặc /upcoming)
+  const [tabState, setTabState] = useState({
+    route: isUpcomingRoute,
+    tab: isUpcomingRoute ? 'coming-soon' : 'now-showing',
+  });
+  const activeTab =
+    tabState.route === isUpcomingRoute
+      ? tabState.tab
+      : isUpcomingRoute
+        ? 'coming-soon'
+        : 'now-showing';
+
+  const setActiveTab = (tab) => {
+    setTabState({ route: isUpcomingRoute, tab });
+  };
 
   // State bộ lọc & tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,17 +43,6 @@ function HomePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState('api');
-
-  // Reset về trang 1 khi từ khóa debounced thay đổi
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchTerm]);
-
-  // Đồng bộ tab khi người dùng bấm link trên Header (/ hoặc /upcoming)
-  useEffect(() => {
-    setActiveTab(isUpcomingRoute ? 'coming-soon' : 'now-showing');
-    setCurrentPage(1);
-  }, [isUpcomingRoute]);
 
   // Gọi API lấy danh sách phim (lọc & phân trang ở server)
   useEffect(() => {
