@@ -1,0 +1,247 @@
+.formCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  font-family: 'Plus Jakarta Sans', inherit;
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.formTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+.cancelEditLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-body);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelEditLink:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Cảnh báo lỗi trùng giờ / lỗi server */
+.errorBanner {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background-color: var(--color-primary-light);
+  border: 1px solid rgba(225, 29, 72, 0.35);
+  color: var(--color-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.errorIcon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.formBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Hàng 1: 3 cột */
+.rowTop {
+  display: grid;
+  grid-template-columns: 1.35fr 1.1fr 0.85fr;
+  gap: 14px;
+}
+
+/* Hàng 2: Giờ bắt đầu, Giá thường, Giá VIP, Nút hành động */
+.rowBottom {
+  display: grid;
+  grid-template-columns: 1.1fr 0.75fr 0.75fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.labelWithBadge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.required {
+  color: var(--color-primary);
+}
+
+.endTimeBadge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fieldControl {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.fieldControl:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: var(--bg-surface);
+}
+
+.controlError {
+  border-color: var(--color-primary);
+}
+
+.fieldError {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Nhóm nút hành động */
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.submitBtn {
+  height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 11px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(225, 29, 72, 0.25);
+  transition:
+    background-color 0.16s ease,
+    transform 0.14s ease,
+    opacity 0.16s ease;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resetBtn {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 11px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.resetBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@media (max-width: 1024px) {
+  .rowTop,
+  .rowBottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actionButtons {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .formCard {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .rowTop,
+  .rowBottom {
+    grid-template-columns: 1fr;
+  }
+
+  .actionButtons {
+    grid-column: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
