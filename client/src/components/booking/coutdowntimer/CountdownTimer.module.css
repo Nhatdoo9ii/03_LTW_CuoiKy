@@ -1,0 +1,122 @@
+/* Biến thể dạng thẻ (Trang Chọn ghế) */
+.timerCard {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  font-family: 'Plus Jakarta Sans', inherit;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.iconWrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.textWrap {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.cardLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.timeRow {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.timeValue {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.timeUnit {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Biến thể dạng thanh gọn (Trang Thanh toán) */
+.compactPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background-color: var(--color-primary-light);
+  border: 1px solid rgba(225, 29, 72, 0.22);
+  color: var(--color-primary);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.84rem;
+}
+
+.compactIcon {
+  flex-shrink: 0;
+}
+
+.compactLabel {
+  font-weight: 600;
+}
+
+.compactTime {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+/* Hiệu ứng cảnh báo khi còn dưới 1 phút */
+.urgent {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  animation: urgentPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(225, 29, 72, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  .timerCard {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 14px;
+  }
+
+  .timeValue {
+    font-size: 1.2rem;
+  }
+
+  .compactPill {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.8rem;
+  }
+}

@@ -1,0 +1,279 @@
+.pageWrapper {
+  min-height: calc(100vh - 140px);
+  padding: 24px 0 48px;
+  background-color: var(--bg-page);
+  font-family: 'Plus Jakarta Sans', inherit;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Thanh điều hướng phụ phía trên */
+.topNavBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-body);
+  transition: color 0.16s ease;
+}
+
+.backLink:hover {
+  color: var(--color-primary);
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-body);
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.refreshBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Thanh cảnh báo giới hạn 8 ghế / trùng ghế 409 */
+.alertBanner {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: var(--color-primary-light);
+  border: 1px solid rgba(225, 29, 72, 0.3);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alertIcon {
+  flex-shrink: 0;
+}
+
+.alertText {
+  flex: 1;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.alertCloseBtn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.alertCloseBtn:hover {
+  background-color: rgba(225, 29, 72, 0.12);
+}
+
+/* Bố cục 2 cột */
+.bookingLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 24px;
+  align-items: start;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.rightColumn {
+  position: sticky;
+  top: 24px;
+}
+
+/* Thẻ tiêu đề + Đồng hồ đếm ngược */
+.headerCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.headerTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pageTitle {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.25;
+}
+
+.roomSubtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.roomIcon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* Trạng thái đang tải / lỗi */
+.stateBox {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 56px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorIcon {
+  color: var(--color-primary);
+}
+
+.stateTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+.stateText {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  max-width: 460px;
+}
+
+.stateActions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.primaryLinkBtn,
+.secondaryActionBtn {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryLinkBtn {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border: none;
+}
+
+.primaryLinkBtn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.secondaryActionBtn {
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  border: 1px solid var(--border-color);
+}
+
+@media (max-width: 1024px) {
+  .bookingLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .rightColumn {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageWrapper {
+    padding: 16px 0 36px;
+  }
+
+  .container {
+    padding: 0 14px;
+  }
+
+  .headerCard {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .pageTitle {
+    font-size: 1.25rem;
+  }
+
+  .roomSubtitle {
+    font-size: 0.8rem;
+  }
+}

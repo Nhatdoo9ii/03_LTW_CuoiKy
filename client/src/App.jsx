@@ -13,9 +13,9 @@ import RegisterPage from './pages/public/RegisterPage';
 import NotFoundPage from './pages/public/NotFoundPage';
 import PromotionPage from './pages/public/PromotionPage';
 
-import SeatSelectionPage from './pages/member/SeatSelectionPage';
-import CheckoutPage from './pages/member/CheckoutPage';
-import BookingSuccessPage from './pages/member/BookingSuccessPage';
+import SeatSelectionPage from './pages/member/seatselection/SeatSelectionPage';
+import CheckoutPage from './pages/member/checkout/CheckoutPage';
+import BookingSuccessPage from './pages/member/bookingsuccess/BookingSuccessPage';
 import MyTicketsPage from './pages/member/MyTicketsPage';
 
 import AdminMoviesPage from './pages/admin/AdminMoviesPage';

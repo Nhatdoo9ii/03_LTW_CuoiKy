@@ -1,1 +1,0 @@
-const BookingSuccessPage = () => <h2>Đặt vé thành công (TV3)</h2>; export default BookingSuccessPage;

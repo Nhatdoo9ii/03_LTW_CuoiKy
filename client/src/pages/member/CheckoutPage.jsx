@@ -1,1 +1,0 @@
-const CheckoutPage = () => <h2>Xác nhận & Thanh toán vé (TV3)</h2>; export default CheckoutPage;
