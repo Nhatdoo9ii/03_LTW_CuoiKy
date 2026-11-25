@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { AlertCircle, Plus, RotateCcw, Save, X } from 'lucide-react';
-import { calculateEndTime } from '../../../services/showtimeService';
+import { calculateEndTime } from '../../services/showtimeService';
 import styles from './ShowtimeForm.module.css';
 
-// Hàm phụ: lấy ngày hôm nay định dạng YYYY-MM-DD để làm giá trị mặc định cho ô chọn ngày
+// Hàm phụ: lấy ngày hôm nay định dạng YYYY-MM-DD làm giá trị mặc định
 const getTodayDateString = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -12,29 +12,46 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
-// Hàm phụ: tạo giá trị khởi tạo cho form (tạo mới hoặc nạp dữ liệu suất đang sửa)
+// Hàm phụ: kiểm tra 1 phòng chiếu có đang bảo trì hay không
+const isRoomMaintenance = (room) => {
+  if (!room) {
+    return false;
+  }
+  if (room.isActive === false) {
+    return true;
+  }
+  if (room.status === 'maintenance' || room.status === 'inactive') {
+    return true;
+  }
+  return false;
+};
+
+// Hàm phụ: tạo giá trị ban đầu cho các ô nhập liệu của Form
 const getInitialFormValues = (editingShowtime, movies, rooms, defaultDate) => {
   if (editingShowtime) {
     return {
-      movieId: editingShowtime.movieId || '',
-      roomId: editingShowtime.roomId || '',
+      movieId: String(editingShowtime.movieId || ''),
+      roomId: String(editingShowtime.roomId || ''),
       date: editingShowtime.date || defaultDate || getTodayDateString(),
-      time: editingShowtime.time || editingShowtime.startTime || '18:30',
-      basePrice: String(editingShowtime.basePrice || 85000),
+      time: editingShowtime.startTime || editingShowtime.time || '18:30',
+      basePrice: String(editingShowtime.basePrice || editingShowtime.price || 85000),
       vipPrice: String(editingShowtime.vipPrice || 100000),
     };
   }
 
-  // Tìm phòng đầu tiên đang hoạt động (tránh chọn mặc định phòng đang bảo trì)
-  const firstActiveRoom = rooms.find((room) => room.status !== 'maintenance');
+  // Chọn mặc định phòng đầu tiên đang hoạt động
+  const firstActiveRoom = rooms.find((room) => !isRoomMaintenance(room));
   let defaultRoomId = '';
   if (firstActiveRoom) {
-    defaultRoomId = firstActiveRoom.id;
+    defaultRoomId = String(firstActiveRoom.id);
   } else if (rooms.length > 0) {
-    defaultRoomId = rooms[0].id;
+    defaultRoomId = String(rooms[0].id);
   }
 
-  const defaultMovieId = movies.length > 0 ? movies[0].id : '';
+  let defaultMovieId = '';
+  if (movies.length > 0) {
+    defaultMovieId = String(movies[0].id);
+  }
 
   return {
     movieId: defaultMovieId,
@@ -46,7 +63,7 @@ const getInitialFormValues = (editingShowtime, movies, rooms, defaultDate) => {
   };
 };
 
-// Hàm phụ: kiểm tra hợp lệ toàn bộ các trường trong form suất chiếu
+// Hàm phụ: kiểm tra hợp lệ toàn bộ các trường nhập trong form suất chiếu
 const validateShowtimeForm = (values, rooms) => {
   const errors = {};
 
@@ -57,8 +74,10 @@ const validateShowtimeForm = (values, rooms) => {
   if (!values.roomId) {
     errors.roomId = 'Vui lòng chọn phòng chiếu.';
   } else {
-    const selectedRoom = rooms.find((r) => String(r.id) === String(values.roomId));
-    if (selectedRoom && selectedRoom.status === 'maintenance') {
+    const selectedRoom = rooms.find((r) => {
+      return String(r.id) === String(values.roomId);
+    });
+    if (isRoomMaintenance(selectedRoom)) {
       errors.roomId = 'Phòng này đang bảo trì, vui lòng chọn phòng khác.';
     }
   }
@@ -97,8 +116,6 @@ const ShowtimeForm = ({
   onCancelEdit,
 }) => {
   const isEditMode = Boolean(editingShowtime);
-
-  // Khởi tạo từng trường dữ liệu của form
   const initialValues = getInitialFormValues(
     editingShowtime,
     movies,
@@ -117,8 +134,10 @@ const ShowtimeForm = ({
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Tìm phim đang chọn để tự động tính giờ "Dự kiến kết thúc"
-  const selectedMovie = movies.find((item) => String(item.id) === String(movieId));
+  // Tìm phim đang chọn để tự tính giờ "Dự kiến kết thúc"
+  const selectedMovie = movies.find((item) => {
+    return String(item.id) === String(movieId);
+  });
   const movieDuration = selectedMovie ? Number(selectedMovie.duration) : 120;
   const estimatedEndTime = calculateEndTime(time, movieDuration);
 
@@ -132,7 +151,7 @@ const ShowtimeForm = ({
     }
   };
 
-  // Xử lý bấm nút "Đặt lại" form về giá trị ban đầu
+  // Đặt lại form về giá trị mặc định ban đầu
   const handleResetForm = () => {
     const resetValues = getInitialFormValues(null, movies, rooms, defaultDate);
     setMovieId(resetValues.movieId);
@@ -159,14 +178,12 @@ const ShowtimeForm = ({
       vipPrice,
     };
 
-    // Bước 1: Kiểm tra hợp lệ dữ liệu đầu vào
     const errors = validateShowtimeForm(formValues, rooms);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
     }
 
-    // Bước 2: Gọi hàm lưu từ AdminShowtimesPage (sẽ kiểm tra trùng giờ cùng phòng)
     setIsSubmitting(true);
     try {
       await onSubmitShowtime({
@@ -178,7 +195,6 @@ const ShowtimeForm = ({
         vipPrice: Number(vipPrice),
       });
 
-      // Nếu tạo mới thành công thì giữ ngày hiện tại và xóa thông báo lỗi
       if (!isEditMode) {
         setFieldErrors({});
         setSubmitError('');
@@ -192,9 +208,11 @@ const ShowtimeForm = ({
     }
   };
 
-  const formTitle = isEditMode
-    ? `Chỉnh sửa suất chiếu #${editingShowtime.id}`
-    : 'Thêm suất chiếu mới vào lịch';
+  let formTitle = 'Thêm suất chiếu mới vào lịch';
+  if (isEditMode) {
+    const shortId = String(editingShowtime.id || '').slice(-4).toUpperCase();
+    formTitle = `Chỉnh sửa suất chiếu #SC-${shortId}`;
+  }
 
   return (
     <section className={styles.formCard} aria-labelledby="showtime-form-title">
@@ -215,7 +233,7 @@ const ShowtimeForm = ({
         )}
       </div>
 
-      {/* Thông báo lỗi nghiệp vụ (VD: trùng giờ chiếu trong cùng phòng) */}
+      {/* Thông báo lỗi nghiệp vụ từ API (VD: 409 trùng giờ chiếu, 401/403) */}
       {submitError && (
         <div className={styles.errorBanner} role="alert">
           <AlertCircle size={17} className={styles.errorIcon} aria-hidden="true" />
@@ -274,7 +292,7 @@ const ShowtimeForm = ({
             >
               <option value="">-- Chọn phòng chiếu --</option>
               {rooms.map((room) => {
-                const isMaintenance = room.status === 'maintenance';
+                const isMaintenance = isRoomMaintenance(room);
                 const roomLabel = isMaintenance
                   ? `${room.name} (${room.totalSeats} ghế - Đang bảo trì)`
                   : `${room.name} (${room.totalSeats} ghế)`;
