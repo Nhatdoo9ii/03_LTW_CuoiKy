@@ -23,7 +23,7 @@ import {
   selectSelectedSeats,
   toggleSeat,
 } from '../../../store/bookingSlice';
-import { getShowtimeDetail } from '../../../services/bookingService';
+import { getShowtimeById } from '../../../services/showtimeService';
 import styles from './SeatSelectionPage.module.css';
 
 // Hàm phụ: kiểm tra tài khoản hiện tại có phải sinh viên/cán bộ PTIT không
@@ -55,13 +55,13 @@ const SeatSelectionPage = () => {
   const seatLimitWarning = useSelector(selectSeatLimitWarning);
   const appliedPromo = useSelector(selectAppliedPromo);
 
-  // Các state cơ bản quản lý dữ liệu suất chiếu và trạng thái tải
+  // Các state quản lý dữ liệu suất chiếu tải từ GET /api/showtimes/:id
   const [loadedShowtimeId, setLoadedShowtimeId] = useState(null);
   const [showtimeInfo, setShowtimeInfo] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [reloadCount, setReloadCount] = useState(0);
 
-  // Nhận thông báo trùng ghế 409 nếu bị đẩy ngược lại từ trang Thanh toán
+  // Nhận thông báo trùng ghế 409 nếu bị đẩy ngược từ trang Thanh toán về
   const [conflictNotice, setConflictNotice] = useState(() => {
     if (location.state && location.state.conflictMessage) {
       return location.state.conflictMessage;
@@ -69,7 +69,7 @@ const SeatSelectionPage = () => {
     return '';
   });
 
-  // Dùng useRef để đánh dấu chỉ tự động áp dụng mã PTIT35 đúng 1 lần khi mới vào trang
+  // Dùng useRef để đánh dấu chỉ tự động áp dụng mã PTIT35 đúng 1 lần khi mới vào suất chiếu
   const autoAppliedShowtimeRef = useRef(null);
   const hasAppliedPromoRef = useRef(Boolean(appliedPromo));
 
@@ -77,13 +77,13 @@ const SeatSelectionPage = () => {
     hasAppliedPromoRef.current = Boolean(appliedPromo);
   }, [appliedPromo]);
 
-
+  // Gọi API GET /api/showtimes/:id để lấy thông tin phim, cấu hình phòng và danh sách bookedSeats
   useEffect(() => {
     let isCancelled = false;
 
     const loadShowtimeData = async () => {
       try {
-        const detail = await getShowtimeDetail(showtimeId);
+        const detail = await getShowtimeById(showtimeId);
         if (isCancelled) {
           return;
         }
@@ -101,9 +101,10 @@ const SeatSelectionPage = () => {
         setLoadError('');
         setLoadedShowtimeId(showtimeId);
 
+        // Khởi tạo phiên chọn ghế và bộ đếm giữ ghế 5 phút trong Redux
         dispatch(initBookingSession(detail));
 
-        // Nếu là sinh viên PTIT và chưa áp mã nào thì tự động áp dụng mã PTIT35
+        // Tự động áp dụng mã PTIT35 (1 lần duy nhất) nếu là sinh viên PTIT và chưa áp mã nào
         const isFirstTimeForShowtime =
           autoAppliedShowtimeRef.current !== showtimeId;
 
@@ -130,13 +131,13 @@ const SeatSelectionPage = () => {
 
     loadShowtimeData();
 
-    // Cleanup: tránh cập nhật state nếu người dùng rời trang khi dữ liệu chưa tải xong
+    // Cleanup: tránh cập nhật state nếu người dùng rời trang trước khi API trả về
     return () => {
       isCancelled = true;
     };
   }, [showtimeId, reloadCount, user, dispatch]);
 
-  // Nếu mã suất chiếu đã tải khác mã trên URL thì đang ở trạng thái tải dữ liệu
+  // Đang tải khi mã suất chiếu đã tải xong khác với mã trên URL hiện tại
   const isLoading = loadedShowtimeId !== showtimeId;
 
   // Xử lý chọn hoặc bỏ chọn 1 ghế trên sơ đồ
@@ -144,7 +145,7 @@ const SeatSelectionPage = () => {
     dispatch(toggleSeat(seat));
   };
 
-  // Xử lý chuyển sang trang Xác nhận & Thanh toán
+  // Xử lý bấm nút chuyển sang trang Xác nhận & Thanh toán
   const handleGoToCheckout = () => {
     if (selectedSeats.length === 0) {
       return;
@@ -152,7 +153,7 @@ const SeatSelectionPage = () => {
     navigate('/checkout');
   };
 
-  // Xử lý bấm nút "Làm mới ghế" để tải lại danh sách ghế đã bán mới nhất
+  // Xử lý bấm nút "Làm mới ghế" để gọi lại GET /api/showtimes/:id lấy bookedSeats mới nhất
   const handleRefreshSeats = () => {
     setLoadedShowtimeId(null);
     setReloadCount(reloadCount + 1);
@@ -168,7 +169,7 @@ const SeatSelectionPage = () => {
     dispatch(clearSeatLimitWarning());
   };
 
-  // Trường hợp 1: Đang tải dữ liệu suất chiếu
+  // Trường hợp 1: Đang tải dữ liệu suất chiếu từ server
   if (isLoading) {
     return (
       <section className={styles.pageWrapper} aria-busy="true">
@@ -217,7 +218,7 @@ const SeatSelectionPage = () => {
     );
   }
 
-  // Trường hợp 3: Đã tải xong dữ liệu -> hiển thị sơ đồ ghế và tóm tắt đơn vé
+  // Trường hợp 3: Đã tải xong dữ liệu -> hiển thị sơ đồ ghế và khung tóm tắt
   let movieId = '';
   if (showtimeInfo.movieId) {
     movieId = showtimeInfo.movieId;
@@ -232,11 +233,12 @@ const SeatSelectionPage = () => {
 
   const room = showtimeInfo.room;
   const roomName = room && room.name ? room.name : 'Phòng chiếu';
+  const isRoomUnderMaintenance = room && room.isActive === false;
 
   return (
     <section className={styles.pageWrapper}>
       <div className={styles.container}>
-        {/* Thanh quay lại trang chi tiết phim và nút làm mới sơ đồ ghế */}
+        {/* Thanh quay lại trang chi tiết phim và nút làm mới danh sách ghế đã bán */}
         <div className={styles.topNavBar}>
           <Link to={backToMovieUrl} className={styles.backLink}>
             <ArrowLeft size={16} aria-hidden="true" />
@@ -247,13 +249,29 @@ const SeatSelectionPage = () => {
             type="button"
             className={styles.refreshBtn}
             onClick={handleRefreshSeats}
-            title="Cập nhật danh sách ghế đã bán mới nhất"
+            title="Cập nhật danh sách ghế đã bán mới nhất từ máy chủ"
           >
             <RefreshCw size={15} aria-hidden="true" />
             <span>Làm mới ghế</span>
           </button>
         </div>
 
+        {/* Cảnh báo nếu phòng chiếu đang tạm ngưng bảo trì */}
+        {isRoomUnderMaintenance && (
+          <div className={styles.alertBanner} role="alert">
+            <AlertCircle
+              size={18}
+              className={styles.alertIcon}
+              aria-hidden="true"
+            />
+            <span className={styles.alertText}>
+              {roomName} hiện đang tạm ngưng bảo trì. Vui lòng chọn suất chiếu ở
+              phòng khác.
+            </span>
+          </div>
+        )}
+
+        {/* Cảnh báo khi có ghế vừa bị người khác đặt (lỗi 409) */}
         {conflictNotice && (
           <div className={styles.alertBanner} role="alert">
             <AlertCircle
@@ -273,6 +291,7 @@ const SeatSelectionPage = () => {
           </div>
         )}
 
+        {/* Cảnh báo khi người dùng chọn vượt quá 8 ghế */}
         {seatLimitWarning && (
           <div className={styles.alertBanner} role="alert">
             <AlertCircle
@@ -292,10 +311,10 @@ const SeatSelectionPage = () => {
           </div>
         )}
 
-
+        {/* Bố cục chính 2 cột: Trái là sơ đồ ghế, Phải là cột tóm tắt đơn vé */}
         <div className={styles.bookingLayout}>
           <div className={styles.leftColumn}>
-  
+            {/* Tiêu đề phòng chiếu + Đồng hồ đếm ngược 05:00 */}
             <header className={styles.headerCard}>
               <div className={styles.headerTitleGroup}>
                 <h1 className={styles.pageTitle}>Chọn ghế ngồi</h1>
@@ -315,7 +334,7 @@ const SeatSelectionPage = () => {
               <CountdownTimer movieId={movieId} variant="card" />
             </header>
 
-     
+            {/* Sơ đồ ghế sinh động theo cấu hình phòng từ MongoDB */}
             <SeatGrid
               room={room}
               bookedSeats={showtimeInfo.bookedSeats}
@@ -326,7 +345,7 @@ const SeatSelectionPage = () => {
             />
           </div>
 
-
+          {/* Cột phải: Tóm tắt đơn đặt vé và mã ưu đãi PTIT35 */}
           <div className={styles.rightColumn}>
             <BookingSummary
               showtimeInfo={showtimeInfo}
