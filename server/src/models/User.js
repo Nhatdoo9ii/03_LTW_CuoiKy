@@ -45,13 +45,12 @@ const userSchema = new mongoose.Schema(
 );
 
 // Tự động băm mật khẩu trước khi lưu vào DB
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // So sánh mật khẩu khi đăng nhập

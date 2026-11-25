@@ -4,6 +4,13 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 
+import authRoutes from './routes/authRoutes.js';
+import movieRoutes from './routes/movieRoutes.js';
+import roomRoutes from './routes/roomRoutes.js';
+import showtimeRoutes from './routes/showtimeRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import statsRoutes from './routes/statsRoutes.js';
+
 // Load biến môi trường
 dotenv.config();
 
@@ -14,7 +21,12 @@ const app = express();
 connectDB();
 
 // Middlewares xử lý request
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || '*',
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -27,6 +39,14 @@ app.get('/api/health', (req, res) => {
     env: process.env.NODE_ENV || 'development',
   });
 });
+
+// Mount các REST API routes theo tài nguyên (danh từ số nhiều)
+app.use('/api/auth', authRoutes);
+app.use('/api/movies', movieRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/showtimes', showtimeRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Middleware xử lý lỗi tập trung
 app.use(notFound);
