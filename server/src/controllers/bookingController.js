@@ -179,12 +179,60 @@ export const getBookingById = async (req, res, next) => {
   }
 };
 
-// @desc    Hủy vé (kiểm tra điều kiện trước giờ chiếu >= 2 tiếng)
+// @desc    Hủy vé (kiểm tra điều kiện trước giờ chiếu >= 2 tiếng, hoàn ghế)
 // @route   PATCH /api/bookings/:id/cancel
 // @access  Private
-export const cancelBooking = async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Chức năng hủy vé chưa được triển khai (TODO: bookingController.cancelBooking)',
-  });
+export const cancelBooking = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('showtimeId');
+
+    if (!booking) {
+      res.status(404);
+      throw new Error('Không tìm thấy vé cần hủy');
+    }
+
+    if (
+      booking.userId.toString() !== req.user._id.toString() &&
+      req.user.role !== 'admin'
+    ) {
+      res.status(403);
+      throw new Error('Bạn không có quyền hủy vé này');
+    }
+
+    if (booking.status === 'cancelled') {
+      res.status(400);
+      throw new Error('Vé này đã được hủy trước đó');
+    }
+
+    const showtime = booking.showtimeId;
+    if (!showtime) {
+      res.status(404);
+      throw new Error('Không tìm thấy dữ liệu suất chiếu của vé');
+    }
+
+    const showtimeDateTime = new Date(`${showtime.date}T${showtime.startTime}:00+07:00`);
+    const now = new Date();
+    const diffHours = (showtimeDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours < 2) {
+      res.status(400);
+      throw new Error('Chỉ được phép hủy vé trước giờ chiếu ít nhất 2 tiếng');
+    }
+
+    booking.status = 'cancelled';
+    await booking.save();
+
+    const seatsToRelease = booking.seats.map((s) => s.seatId);
+    await Showtime.findByIdAndUpdate(showtime._id, {
+      $pull: { bookedSeats: { $in: seatsToRelease } },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Hủy vé thành công và đã hoàn trả ghế',
+      data: booking,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
