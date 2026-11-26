@@ -19,8 +19,8 @@ import BookingSuccessPage from './pages/member/bookingsuccess/BookingSuccessPage
 import MyTicketsPage from './pages/member/MyTicketsPage';
 
 import AdminMoviesPage from './pages/admin/AdminMoviesPage';
-import AdminRoomsPage from './pages/admin/AdminRoomsPage';
-import AdminShowtimesPage from './pages/admin/AdminShowtimesPage';
+import AdminRoomsPage from './pages/admin/adminroompage/AdminRoomsPage';
+import AdminShowtimesPage from './pages/admin/adminshowtime/AdminShowtimesPage';
 import AdminStatsPage from './pages/admin/AdminStatsPage';
 
 const App = () => {
