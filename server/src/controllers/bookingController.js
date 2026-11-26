@@ -120,21 +120,63 @@ export const createBooking = async (req, res, next) => {
 // @desc    Lấy lịch sử đặt vé của người dùng đang đăng nhập
 // @route   GET /api/bookings/my-tickets
 // @access  Private
-export const getMyBookings = async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Chức năng xem lịch sử vé chưa được triển khai (TODO: bookingController.getMyBookings)',
-  });
+export const getMyBookings = async (req, res, next) => {
+  try {
+    const bookings = await Booking.find({ userId: req.user._id })
+      .populate({
+        path: 'showtimeId',
+        populate: [
+          { path: 'movieId', select: 'title posterUrl duration ageRating genres' },
+          { path: 'roomId', select: 'name' },
+        ],
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Lấy chi tiết 1 vé
 // @route   GET /api/bookings/:id
 // @access  Private
-export const getBookingById = async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Chức năng xem chi tiết vé chưa được triển khai (TODO: bookingController.getBookingById)',
-  });
+export const getBookingById = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('userId', 'fullName email phone isStudent')
+      .populate({
+        path: 'showtimeId',
+        populate: [
+          { path: 'movieId', select: 'title posterUrl duration ageRating genres' },
+          { path: 'roomId', select: 'name' },
+        ],
+      });
+
+    if (!booking) {
+      res.status(404);
+      throw new Error('Không tìm thấy thông tin vé');
+    }
+
+    if (
+      booking.userId._id.toString() !== req.user._id.toString() &&
+      req.user.role !== 'admin'
+    ) {
+      res.status(403);
+      throw new Error('Bạn không có quyền xem vé này');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: booking,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Hủy vé (kiểm tra điều kiện trước giờ chiếu >= 2 tiếng)
