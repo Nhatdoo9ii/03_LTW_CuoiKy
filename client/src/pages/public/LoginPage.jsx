@@ -113,7 +113,7 @@ const LoginPage = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="VD: longtb.b25cc130@stu.ptit.edu.vn"
+              placeholder="VD: nhatddm.b24cn123@stu.ptit.edu.vn"
               className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
             />
             {errors.email && <span className={styles.errorText}>{errors.email}</span>}
@@ -159,7 +159,7 @@ const LoginPage = () => {
           <div className={styles.demoActions}>
             <button
               type="button"
-              onClick={() => fillDemoAccount('longtb.b25cc130@stu.ptit.edu.vn')}
+              onClick={() => fillDemoAccount('nhatddm.b24cn123@stu.ptit.edu.vn')}
               className={styles.demoBtn}
             >
               Sinh viên PTIT
