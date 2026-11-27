@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import logoPtit from '../../assets/logo-ptit.png';
 import styles from './LoginPage.module.css';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const { user, login } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -61,12 +62,9 @@ const LoginPage = () => {
 
     try {
       const loggedInUser = await login(formData.email, formData.password);
-      // Điều hướng lại để Header cập nhật thông tin user từ localStorage
-      if (loggedInUser.role === 'admin') {
-        window.location.href = '/admin/movies';
-      } else {
-        window.location.href = '/';
-      }
+      navigate(loggedInUser.role === 'admin' ? '/admin/movies' : '/', {
+        replace: true,
+      });
     } catch (err) {
       setServerError(err.message || 'Đăng nhập thất bại, vui lòng thử lại!');
     } finally {
