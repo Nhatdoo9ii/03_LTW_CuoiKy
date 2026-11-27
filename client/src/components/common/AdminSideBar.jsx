@@ -1,7 +1,7 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import logoPtit from '../../assets/logo-ptit.png';
-import styles from './AdminSidebar.module.css';
+import styles from './AdminSideBar.module.css';
 
 function AdminSidebar() {
   const navigate = useNavigate();
