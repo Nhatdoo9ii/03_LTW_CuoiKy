@@ -1,97 +1,97 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import mockData from '../data/mockData.json';
+import {
+  getMeApi,
+  loginApi,
+  normalizeUser,
+  registerApi,
+} from '../services/authService';
 
 const AuthContext = createContext(null);
 
-// Thêm sẵn tài khoản sinh viên để test đăng nhập
-const defaultDemoUsers = [
-  ...mockData.users,
-  {
-    id: 'u_longtb',
-    fullName: 'Trần Bảo Long',
-    email: 'longtb.b25cc130@stu.ptit.edu.vn',
-    phone: '0364054979',
-    role: 'member',
-    isStudent: true,
-  },
-];
+const readStoredUser = () => {
+  try {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
+    // Nếu còn sót token giả từ giai đoạn mock thì xóa để tránh lỗi 401 khi gọi API thật
+    if (!token || token.startsWith('mock-jwt-token-') || !savedUser) {
+      if (token && token.startsWith('mock-jwt-token-')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+      return null;
+    }
+
+    return normalizeUser(JSON.parse(savedUser));
+  } catch {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return null;
+  }
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(readStoredUser);
+
+  // Đồng bộ thông tin tài khoản với /api/auth/me khi tải lại trang
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || token.startsWith('mock-jwt-token-')) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const verifySession = async () => {
+      try {
+        const verifiedUser = await getMeApi(token);
+        if (!isCancelled && verifiedUser) {
+          localStorage.setItem('user', JSON.stringify(verifiedUser));
+          setUser(verifiedUser);
+        }
+      } catch (err) {
+        if (!isCancelled && err.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      }
+    };
+
+    verifySession();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   // Lắng nghe thay đổi từ localStorage nếu mở nhiều tab
   useEffect(() => {
     const handleStorageChange = () => {
-      const savedUser = localStorage.getItem('user');
-      setUser(savedUser ? JSON.parse(savedUser) : null);
+      setUser(readStoredUser());
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Xử lý đăng nhập (tạm check với danh sách mẫu và user đăng ký lưu ở localStorage)
+  // Đăng nhập bằng API thật và lưu JWT token vào localStorage
   const login = async (email, password) => {
-    const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-    const allUsers = [...defaultDemoUsers, ...registeredUsers];
-
-    const foundUser = allUsers.find(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase()
-    );
-
-    if (!foundUser) {
-      throw new Error('Email không tồn tại trong hệ thống!');
-    }
-
-    // Tài khoản mới tạo thì check mật khẩu, còn tài khoản mẫu thì bỏ qua
-    if (foundUser.password && foundUser.password !== password) {
-      throw new Error('Mật khẩu không chính xác!');
-    }
-
-    // Đổi 'user' trong mockData thành 'member' cho khớp với phân quyền bên App.jsx
-    const normalizedUser = {
-      ...foundUser,
-      role: foundUser.role === 'user' ? 'member' : foundUser.role,
-    };
-
-    const fakeToken = `mock-jwt-token-${normalizedUser.id}-${Date.now()}`;
-    localStorage.setItem('token', fakeToken);
-    localStorage.setItem('user', JSON.stringify(normalizedUser));
-    setUser(normalizedUser);
-
-    return normalizedUser;
+    const { token, user: loggedInUser } = await loginApi(email, password);
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(loggedInUser));
+    setUser(loggedInUser);
+    return loggedInUser;
   };
 
-  // Xử lý đăng ký tài khoản mới
+  // Đăng ký tài khoản mới qua API thật
   const register = async ({ fullName, email, phone, password }) => {
-    const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-    const allUsers = [...defaultDemoUsers, ...registeredUsers];
-
-    const isEmailExist = allUsers.some(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase()
-    );
-
-    if (isEmailExist) {
-      throw new Error('Email này đã được sử dụng!');
-    }
-
-    // Check đuôi mail sinh viên PTIT để áp dụng ưu đãi vé
-    const isStudent = email.trim().toLowerCase().endsWith('@stu.ptit.edu.vn');
-
-    const newUser = {
-      id: `u_${Date.now()}`,
-      fullName: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
+    const { user: createdUser } = await registerApi({
+      fullName,
+      email,
+      phone,
       password,
-      role: 'member',
-      isStudent,
-    };
-
-    localStorage.setItem('ptit_registered_users', JSON.stringify([...registeredUsers, newUser]));
-    return newUser;
+    });
+    return createdUser;
   };
 
   // Đăng xuất thì xóa hết thông tin trong localStorage
@@ -108,48 +108,21 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  // Phòng trường hợp App.jsx chưa bọc AuthProvider thì vẫn chạy được qua localStorage
   if (!context) {
-    const savedUser = localStorage.getItem('user');
     return {
-      user: savedUser ? JSON.parse(savedUser) : null,
+      user: readStoredUser(),
       login: async (email, password) => {
-        const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-        const allUsers = [...defaultDemoUsers, ...registeredUsers];
-        const foundUser = allUsers.find(
-          (u) => u.email.toLowerCase() === email.trim().toLowerCase()
-        );
-        if (!foundUser) throw new Error('Email không tồn tại trong hệ thống!');
-        if (foundUser.password && foundUser.password !== password) {
-          throw new Error('Mật khẩu không chính xác!');
-        }
-        const normalizedUser = {
-          ...foundUser,
-          role: foundUser.role === 'user' ? 'member' : foundUser.role,
-        };
-        localStorage.setItem('token', `mock-jwt-token-${normalizedUser.id}-${Date.now()}`);
-        localStorage.setItem('user', JSON.stringify(normalizedUser));
-        return normalizedUser;
+        const { token, user: loggedInUser } = await loginApi(email, password);
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        return loggedInUser;
       },
-      register: async ({ fullName, email, phone, password }) => {
-        const registeredUsers = JSON.parse(localStorage.getItem('ptit_registered_users') || '[]');
-        const allUsers = [...defaultDemoUsers, ...registeredUsers];
-        if (allUsers.some((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
-          throw new Error('Email này đã được sử dụng!');
-        }
-        const newUser = {
-          id: `u_${Date.now()}`,
-          fullName: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          phone: phone.trim(),
-          password,
-          role: 'member',
-          isStudent: email.trim().toLowerCase().endsWith('@stu.ptit.edu.vn'),
-        };
-        localStorage.setItem('ptit_registered_users', JSON.stringify([...registeredUsers, newUser]));
-        return newUser;
+      register: async (payload) => {
+        const { user: createdUser } = await registerApi(payload);
+        return createdUser;
       },
       logout: () => {
         localStorage.removeItem('token');
