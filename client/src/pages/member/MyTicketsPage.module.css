@@ -121,6 +121,19 @@
   animation: fadeInDown 0.25s ease;
 }
 
+.toastError {
+  background-color: rgba(220, 38, 38, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.errorText {
+  font-size: 15px;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
 /* Modal xác nhận hủy vé */
 .modalBackdrop {
   position: fixed;

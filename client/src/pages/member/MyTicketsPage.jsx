@@ -1,122 +1,71 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import TicketCard from '../../components/tickets-admin/TicketCard';
-import mockData from '../../data/mockData.json';
+import { cancelMyTicket, getMyTickets } from '../../services/ticketService';
 import styles from './MyTicketsPage.module.css';
-
-// Hàm tách ngày (YYYY-MM-DD) và giờ (HH:MM) theo giờ địa phương từ mốc thời gian bất kỳ
-const getLocalDateAndTime = (dateObj) => {
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  const hours = String(dateObj.getHours()).padStart(2, '0');
-  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-  return {
-    date: `${year}-${month}-${day}`,
-    startTime: `${hours}:${minutes}`,
-  };
-};
 
 const MyTicketsPage = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all'); // all | confirmed | cancelled
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // State quản lý Modal xác nhận hủy vé và thông báo kết quả
   const [ticketToCancel, setTicketToCancel] = useState(null);
-  const [toastMessage, setToastMessage] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [toast, setToast] = useState({ type: 'success', message: '' });
 
-  // Khởi tạo danh sách vé của user hiện tại (kết hợp mockData + localStorage)
+  const fetchTickets = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError('');
+    try {
+      const list = await getMyTickets();
+      setTickets(list);
+    } catch (err) {
+      setError(err.message || 'Không thể tải danh sách vé của bạn.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
+    let isCancelled = false;
 
-    const savedBookings = JSON.parse(localStorage.getItem('ptit_bookings') || 'null');
+    const loadInitialTickets = async () => {
+      try {
+        const list = await getMyTickets();
+        if (!isCancelled) {
+          setTickets(list);
+          setError('');
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setError(err.message || 'Không thể tải danh sách vé của bạn.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
-    if (!savedBookings) {
-      const tomorrowSlot = getLocalDateAndTime(new Date(Date.now() + 24 * 60 * 60 * 1000)); // +24h (Hủy được)
-      const nearShowSlot = getLocalDateAndTime(new Date(Date.now() + 60 * 60 * 1000));      // +1h (Khóa vì < 2h)
-      const yesterdaySlot = getLocalDateAndTime(new Date(Date.now() - 24 * 60 * 60 * 1000)); // -24h (Đã chiếu)
+    loadInitialTickets();
 
-      const enrichedMockBookings = (mockData.bookings || []).map((b) => {
-        const showtime = mockData.showtimes?.find((s) => s.id === b.showtimeId) || {};
-        const movie = mockData.movies?.find((m) => m.id === showtime.movieId) || {};
-        const room = mockData.rooms?.find((r) => r.id === showtime.roomId) || {};
-        return {
-          id: b.id,
-          bookingCode: b.id.toUpperCase(),
-          userId: b.userId,
-          movieTitle: movie.title || 'Phim chiếu rạp PTIT',
-          posterUrl: movie.posterUrl || '',
-          roomName: room.name || 'Phòng 01',
-          date: showtime.date || tomorrowSlot.date,
-          startTime: showtime.startTime || '19:30',
-          seats: b.seats || ['D5', 'D6'],
-          totalAmount: b.totalAmount || 110000,
-          status: b.status || 'confirmed',
-        };
-      });
-
-      const sampleMovie1 = mockData.movies?.[0] || { title: 'Chiến Dịch Bóng Đêm: Tái Đấu', posterUrl: '' };
-      const sampleMovie2 = mockData.movies?.[1] || { title: 'Vương Quốc Diệu Kỳ & Xứ Sở Phép Thuật', posterUrl: '' };
-      const sampleMovie3 = mockData.movies?.[2] || { title: 'Dune: Hành Tinh Cát 2', posterUrl: '' };
-
-      const demoTicketsForLong = [
-        {
-          id: 'bk_long_01',
-          bookingCode: 'PTIT-8891',
-          userId: 'u_longtb',
-          movieTitle: sampleMovie1.title,
-          posterUrl: sampleMovie1.posterUrl,
-          roomName: 'Phòng Chiếu 01',
-          date: tomorrowSlot.date,
-          startTime: tomorrowSlot.startTime,
-          seats: ['E5', 'E6'],
-          totalAmount: 130000,
-          status: 'confirmed',
-        },
-        {
-          id: 'bk_long_02',
-          bookingCode: 'PTIT-7420',
-          userId: 'u_longtb',
-          movieTitle: sampleMovie2.title,
-          posterUrl: sampleMovie2.posterUrl,
-          roomName: 'Phòng IMAX PTIT',
-          date: nearShowSlot.date,
-          startTime: nearShowSlot.startTime,
-          seats: ['F4'],
-          totalAmount: 75000,
-          status: 'confirmed',
-        },
-        {
-          id: 'bk_long_03',
-          bookingCode: 'PTIT-6105',
-          userId: 'u_longtb',
-          movieTitle: sampleMovie3.title,
-          posterUrl: sampleMovie3.posterUrl,
-          roomName: 'Phòng Chiếu 02',
-          date: yesterdaySlot.date,
-          startTime: yesterdaySlot.startTime,
-          seats: ['C3', 'C4'],
-          totalAmount: 110000,
-          status: 'confirmed',
-        },
-      ];
-
-      const initialAll = [...demoTicketsForLong, ...enrichedMockBookings];
-      localStorage.setItem('ptit_bookings', JSON.stringify(initialAll));
-      setTickets(initialAll.filter((item) => item.userId === user.id));
-    } else {
-      setTickets(savedBookings.filter((item) => item.userId === user.id));
-    }
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
   // Tự động tắt thông báo toast sau 3 giây
   useEffect(() => {
-    if (!toastMessage) return;
-    const timer = setTimeout(() => setToastMessage(''), 3000);
+    if (!toast.message) return;
+    const timer = setTimeout(() => setToast({ type: 'success', message: '' }), 3500);
     return () => clearTimeout(timer);
-  }, [toastMessage]);
+  }, [toast]);
 
   const filteredTickets = useMemo(() => {
     if (filterStatus === 'all') return tickets;
@@ -131,28 +80,45 @@ const MyTicketsPage = () => {
     }
   };
 
-  // Thực hiện hủy vé khi người dùng bấm xác nhận trong Modal
-  const handleConfirmCancel = () => {
-    if (!ticketToCancel) return;
+  // Gọi API hủy vé khi người dùng xác nhận trong Modal
+  const handleConfirmCancel = async () => {
+    if (!ticketToCancel || isCancelling) return;
 
-    const allBookings = JSON.parse(localStorage.getItem('ptit_bookings') || '[]');
-    const updatedAll = allBookings.map((item) =>
-      item.id === ticketToCancel.id ? { ...item, status: 'cancelled' } : item
-    );
-
-    localStorage.setItem('ptit_bookings', JSON.stringify(updatedAll));
-    setTickets(updatedAll.filter((item) => item.userId === user.id));
-    setToastMessage(`Đã hủy thành công vé #${ticketToCancel.bookingCode}`);
-    setTicketToCancel(null);
+    setIsCancelling(true);
+    try {
+      await cancelMyTicket(ticketToCancel.id);
+      setTickets((prev) =>
+        prev.map((item) =>
+          item.id === ticketToCancel.id ? { ...item, status: 'cancelled' } : item
+        )
+      );
+      setToast({
+        type: 'success',
+        message: `Đã hủy thành công vé #${ticketToCancel.bookingCode}`,
+      });
+    } catch (err) {
+      setToast({
+        type: 'error',
+        message: err.message || 'Không thể hủy vé này.',
+      });
+    } finally {
+      setIsCancelling(false);
+      setTicketToCancel(null);
+    }
   };
 
   return (
     <section className={styles.pageWrapper}>
       <div className={styles.container}>
         {/* Thông báo nhanh sau khi hủy vé */}
-        {toastMessage && (
-          <div className={styles.toastBanner} role="status">
-            ✓ {toastMessage}
+        {toast.message && (
+          <div
+            className={`${styles.toastBanner} ${
+              toast.type === 'error' ? styles.toastError : ''
+            }`}
+            role="status"
+          >
+            {toast.type === 'error' ? '!' : '✓'} {toast.message}
           </div>
         )}
 
@@ -160,7 +126,7 @@ const MyTicketsPage = () => {
           <div>
             <h1 className={styles.pageTitle}>Vé của tôi</h1>
             <p className={styles.pageSubtitle}>
-              Xin chào <strong>{user?.fullName || 'Trần Bảo Long'}</strong>, quản lý lịch sử đặt vé của bạn tại đây.
+              Xin chào <strong>{user?.fullName || 'Thành viên'}</strong>, quản lý lịch sử đặt vé của bạn tại đây.
             </p>
           </div>
 
@@ -189,7 +155,18 @@ const MyTicketsPage = () => {
           </div>
         </header>
 
-        {filteredTickets.length > 0 ? (
+        {loading ? (
+          <div className={styles.emptyBox}>
+            <p className={styles.emptyText}>Đang tải lịch sử đặt vé từ máy chủ...</p>
+          </div>
+        ) : error ? (
+          <div className={styles.emptyBox} role="alert">
+            <p className={styles.errorText}>{error}</p>
+            <button type="button" onClick={fetchTickets} className={styles.bookNowBtn}>
+              Thử lại
+            </button>
+          </div>
+        ) : filteredTickets.length > 0 ? (
           <div className={styles.ticketList}>
             {filteredTickets.map((ticket) => (
               <TicketCard
@@ -213,7 +190,7 @@ const MyTicketsPage = () => {
       {ticketToCancel && (
         <div
           className={styles.modalBackdrop}
-          onClick={() => setTicketToCancel(null)}
+          onClick={() => !isCancelling && setTicketToCancel(null)}
           role="dialog"
           aria-modal="true"
         >
@@ -241,6 +218,7 @@ const MyTicketsPage = () => {
               <button
                 type="button"
                 className={styles.keepBtn}
+                disabled={isCancelling}
                 onClick={() => setTicketToCancel(null)}
               >
                 Giữ lại vé
@@ -248,9 +226,10 @@ const MyTicketsPage = () => {
               <button
                 type="button"
                 className={styles.confirmCancelBtn}
+                disabled={isCancelling}
                 onClick={handleConfirmCancel}
               >
-                Xác nhận hủy vé
+                {isCancelling ? 'Đang hủy vé...' : 'Xác nhận hủy vé'}
               </button>
             </div>
           </div>
