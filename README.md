@@ -1,40 +1,41 @@
 # 🎬 PTIT Cinema — Hệ thống Đặt vé Xem phim Trực tuyến
 
-Ứng dụng web quản lý rạp chiếu phim và đặt vé xem phim trực tuyến xây dựng theo kiến trúc **MERN Stack** (MongoDB, Express.js, ReactJS, Node.js). Dự án phục vụ đồ án cuối kỳ, bao gồm đầy đủ luồng trải nghiệm của khách hàng (chọn phim, chọn ghế theo sơ đồ động, thanh toán QR giả lập, xuất vé điện tử) và hệ thống quản trị dành cho Admin (quản lý phòng chiếu, xếp lịch suất chiếu chống trùng giờ).
+Ứng dụng web full-stack quản lý rạp chiếu phim và đặt vé xem phim trực tuyến xây dựng theo kiến trúc **MERN Stack** (MongoDB, Express.js, React, Node.js). Dự án phục vụ đồ án cuối kỳ môn Lập trình Web (Nhóm 03), đáp ứng đầy đủ 3 luồng vai trò: **Khách (Guest)**, **Thành viên (Member)** và **Quản trị viên (Admin)**.
 
 ---
 
 ## Tính năng chính
 
-### 👤 Dành cho Khách hàng (Member)
-* **Xem lịch chiếu & Chi tiết phim:** Tra cứu thông tin phim, thời lượng, phân loại độ tuổi và danh sách suất chiếu thực tế từ MongoDB.
+### 🌐 Dành cho Khách (Guest)
+* **Trang chủ & Lịch chiếu (`/` & `/upcoming`):**
+  * Chuyển đổi tab **Phim Đang Chiếu** / **Phim Sắp Chiếu**.
+  * Tìm kiếm phim theo tên (`useDebounce` 400ms + `$regex` ở server), lọc theo thể loại (`$in`), lọc theo ngày chiếu và phân trang ở server.
+* **Chi tiết phim (`/movies/:id`):**
+  * Xem thông tin chi tiết phim, mở modal **Xem Trailer YouTube**, xem danh sách suất chiếu thực tế theo từng ngày từ MongoDB.
+* **Khuyến mãi & Giao diện Sáng/Tối (`/promotion`):**
+  * Chuyển đổi **Dark / Light Mode** toàn hệ thống qua `ThemeContext` (lưu `localStorage`).
+
+### 👤 Dành cho Thành viên (Member)
+* **Xác thực & Bảo vệ Route (`/login`, `/register`):**
+  * Đăng ký / Đăng nhập bằng **JWT** (có thời hạn `7d`) + mật khẩu băm `bcryptjs`.
+  * Tự động nhận diện sinh viên PTIT qua đuôi email `@stu.ptit.edu.vn` (`isStudent: true`).
 * **Chọn ghế trực quan (`/booking/:showtimeId`):**
-  * Tự động vẽ sơ đồ ghế động dựa trên cấu hình phòng chiếu (`totalRows`, `seatsPerRow`, `vipRows`) và danh sách ghế đã bán (`bookedSeats`).
-  * Giới hạn tối đa **8 ghế / lần đặt**, hỗ trợ nút làm mới trạng thái ghế từ máy chủ.
-  * Đồng hồ đếm ngược **05:00** giữ ghế xuyên suốt quá trình đặt vé.
-  * Tự động áp dụng mã ưu đãi sinh viên **`PTIT35`** (giảm 35% tiền vé) cho tài khoản thuộc hệ thống PTIT (`@stu.ptit.edu.vn`, `@ptit.edu.vn`).
+  * Vẽ sơ đồ ghế động theo cấu hình phòng (`totalRows`, `seatsPerRow`, `vipRows`) và ghế đã bán (`bookedSeats`).
+  * Quản lý ghế đang chọn bằng **Redux Toolkit** (tối đa **8 ghế / lần đặt**), tính tổng tiền bằng `useMemo`.
+  * Đồng hồ đếm ngược **05:00** giữ ghế (`setInterval` + `clearInterval` cleanup); hết giờ tự động hủy chọn ghế và quay về trang phim bằng `useNavigate`.
 * **Xác nhận & Thanh toán (`/checkout`):**
-  * Kiểm tra hợp lệ thông tin người nhận vé (Họ tên, SĐT 10 số, Email).
-  * Chọn thêm Combo bắp nước, áp dụng/đổi mã khuyến mãi và tính toán hóa đơn tự động.
-  * Hỗ trợ 3 phương thức thanh toán: **MoMo**, **Ngân hàng nội địa** (hiển thị popup quét mã QR thanh toán giả lập) và **Tại quầy**.
-  * Xử lý xung đột trùng ghế (`409 Conflict`) và hướng dẫn quay lại chọn ghế khác.
-* **Vé điện tử (`/booking-success/:bookingId`):**
-  * Hiển thị thông tin vé, mã QR (`qrcode.react`) và mã vạch SVG.
-  * Hỗ trợ in / xuất vé ra file **PDF** sạch đẹp (`window.print()` kết hợp `@media print`).
-  * Bảo vệ quyền riêng tư: chỉ chủ sở hữu vé hoặc Admin mới có quyền xem vé (`403 Forbidden`).
+  * Chọn Combo bắp nước, áp dụng mã ưu đãi **`PTIT35`** (giảm 35% tiền vé, chỉ áp dụng cho tài khoản sinh viên PTIT).
+  * Hỗ trợ 3 phương thức thanh toán: **MoMo**, **Ngân hàng nội địa** (popup quét mã QR giả lập) và **Tại quầy**.
+  * Chống đặt trùng ghế ở server (**`409 Conflict`**) trả kèm `conflictSeats`.
+* **Vé điện tử & Lịch sử vé (`/booking-success/:bookingId`, `/my-tickets`):**
+  * Hiển thị vé điện tử kèm **mã QR Code** (`qrcode.react`) và hỗ trợ in/xuất PDF.
+  * Xem lịch sử vé, lọc theo trạng thái, **hủy vé trước giờ chiếu ít nhất 2 tiếng** (tự động hoàn trả ghế vào suất chiếu).
 
 ### 🛠️ Dành cho Quản trị viên (Admin)
-* **Quản lý Phòng chiếu (`/admin/rooms`):**
-  * Giao diện lưới thẻ 2 cột (Card Grid) kèm 4 chỉ số thống kê tổng quan.
-  * Thêm, sửa cấu hình phòng (số hàng `1–26`, số ghế/hàng `1–30`, chọn hàng VIP động theo số hàng).
-  * Chuyển nhanh trạng thái **Hoạt động / Bảo trì** trực tiếp trên thẻ phòng.
-  * Kiểm tra trùng tên phòng không phân biệt hoa thường (`409`) và chặn xóa phòng đang có lịch chiếu (`409`).
-* **Quản lý Suất chiếu (`/admin/showtimes`):**
-  * Nối trực tiếp 3 nguồn dữ liệu thật: Phim, Phòng chiếu và Suất chiếu.
-  * Tự động tính giờ kết thúc dự kiến dựa theo thời lượng phim (`startTime + movie.duration`).
-  * **Thuật toán chặn trùng giờ chiếu (`409 Conflict`)** trong cùng một phòng và cùng ngày.
-  * Chặn xếp lịch vào các phòng đang bảo trì (`isActive: false`).
-  * Lọc theo tab ngày, tìm kiếm có `debounce`, phân trang và hiển thị thanh tiến độ tỷ lệ lấp đầy ghế.
+* **Quản lý Phim (`/admin/movies`):** Full CRUD (`/api/movies`), form controlled có kiểm tra lỗi hiển thị inline, tìm kiếm/lọc/phân trang.
+* **Quản lý Phòng chiếu (`/admin/rooms`):** Thêm/sửa/xóa phòng chiếu, bật/tắt trạng thái bảo trì, chặn trùng tên (`409`) và chặn xóa phòng đang có lịch chiếu (`409`).
+* **Quản lý Suất chiếu (`/admin/showtimes`):** Tạo/sửa/xóa suất chiếu, tự tính giờ kết thúc và **chặn tạo 2 suất chồng giờ trong cùng phòng (`409 Conflict`)**.
+* **Thống kê doanh thu (`/admin/stats`):** Thống kê doanh thu theo phim và theo ngày bằng **MongoDB Aggregation Pipeline** (`$match`, `$lookup`, `$group`, `$sort`), hỗ trợ lọc theo ngày và xuất báo cáo CSV.
 
 ---
 
@@ -42,9 +43,9 @@
 
 | Tầng | Công nghệ / Thư viện |
 | :--- | :--- |
-| **Frontend** | React 18 (Vite), React Router DOM, Redux Toolkit, Axios, CSS Modules, Lucide React, `qrcode.react` |
-| **Backend** | Node.js (ESM), Express.js, Mongoose, JSON Web Token (`jsonwebtoken`), CORS, Dotenv |
-| **Cơ sở dữ liệu** | MongoDB |
+| **Frontend** | React 19 (Vite 8), React Router v7, Redux Toolkit, Context API, Axios, CSS Modules, Lucide React, `qrcode.react` |
+| **Backend** | Node.js (ESM `"type": "module"`), Express 5, Mongoose 9, `bcryptjs`, `jsonwebtoken`, `cors`, `dotenv` |
+| **Cơ sở dữ liệu** | MongoDB Atlas (5 Collections: `users`, `movies`, `rooms`, `showtimes`, `bookings`) |
 
 ---
 
@@ -54,22 +55,23 @@
 03_LTW_CuoiKy/
 ├── client/                     # Ứng dụng Frontend (React + Vite, cổng 5173)
 │   ├── src/
-│   │   ├── components/         # Các component dùng chung (Booking, Admin, Pagination...)
-│   │   ├── context/            # AuthContext (xác thực người dùng)
-│   │   ├── hooks/              # Custom hooks (useCountdown, useDebounce, useLocalStorage)
-│   │   ├── pages/              # Trang Member & Admin
-│   │   ├── services/           # Tầng gọi API Axios (roomService, showtimeService, bookingService...)
-│   │   └── store/              # Redux Toolkit (store.js, bookingSlice.js)
+│   │   ├── components/         # common/, movies/, booking/, tickets-admin/, admin/movies/
+│   │   ├── context/            # AuthContext.jsx, ThemeContext.jsx
+│   │   ├── hooks/              # useFetch.js, useDebounce.js, useCountdown.js, useLocalStorage.js
+│   │   ├── pages/              # public/, member/, admin/
+│   │   ├── services/           # movieService.js, roomService.js, showtimeService.js, bookingService.js, ticketService.js
+│   │   └── store/              # store.js, bookingSlice.js
 │   └── README.md               # Tài liệu chi tiết Frontend
 │
 ├── server/                     # Ứng dụng Backend (Express + MongoDB, cổng 5001)
 │   ├── src/
-│   │   ├── config/             # Kết nối MongoDB
-│   │   ├── controllers/        # Xử lý nghiệp vụ (roomController, showtimeController...)
-│   │   ├── middlewares/        # authMiddleware (JWT/Role) & errorMiddleware
-│   │   ├── models/             # Mongoose Schemas (Room, Showtime, Movie, User, Booking)
-│   │   ├── routes/             # Định tuyến RESTful API
-│   │   └── server.js           # Điểm khởi chạy chính
+│   │   ├── config/             # db.js (Kết nối MongoDB)
+│   │   ├── controllers/        # auth, movie, room, showtime, booking, stats
+│   │   ├── middlewares/        # authMiddleware.js (JWT/Role) & errorMiddleware.js
+│   │   ├── models/             # User, Movie, Room, Showtime, Booking
+│   │   ├── routes/             # authRoutes, movieRoutes, roomRoutes, showtimeRoutes, bookingRoutes, statsRoutes
+│   │   ├── seeder.js           # Script nạp dữ liệu mẫu từ mockData.json vào MongoDB
+│   │   └── server.js           # Điểm khởi chạy chính Express
 │   └── README.md               # Tài liệu chi tiết Backend API
 │
 └── README.md                   # Tài liệu tổng quan dự án
@@ -80,8 +82,8 @@
 ## ⚙️ Hướng dẫn cài đặt & Khởi chạy
 
 ### Yêu cầu môi trường
-* **Node.js** phiên bản `18.x` trở lên
-* **MongoDB** (Local hoặc MongoDB Atlas)
+* **Node.js** phiên bản `18.x` trở lên (khuyến nghị `20+`)
+* **MongoDB** (MongoDB Atlas hoặc MongoDB Local)
 
 ### Bước 1: Clone dự án
 ```bash
@@ -89,20 +91,25 @@ git clone <url-repository-cua-nhom>
 cd 03_LTW_CuoiKy
 ```
 
-### Bước 2: Cài đặt và chạy Backend (`server/`)
+### Bước 2: Cài đặt, nạp dữ liệu mẫu và chạy Backend (`server/`)
 1. Di chuyển vào thư mục `server` và cài thư viện:
    ```bash
    cd server
    npm install
    ```
-2. Tạo file `.env` trong thư mục `server/` với nội dung mẫu:
+2. Tạo file `server/.env` (copy từ `server/.env.example`):
    ```env
    PORT=5001
-   MONGO_URI=mongodb://127.0.0.1:27017/ptit_cinema
-   JWT_SECRET=ptit_cinema_secret_key
+   MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/ptit_cinema?retryWrites=true&w=majority
+   JWT_SECRET=ptit_cinema_super_secret_jwt_key_2026
+   JWT_EXPIRE=7d
    CLIENT_URL=http://localhost:5173
    ```
-3. Khởi chạy server phát triển:
+3. Nạp dữ liệu mẫu ban đầu vào MongoDB (tùy chọn khi khởi tạo DB mới hoặc reset dữ liệu):
+   ```bash
+   npm run seed
+   ```
+4. Khởi chạy server phát triển:
    ```bash
    npm run dev
    ```
@@ -114,7 +121,7 @@ cd 03_LTW_CuoiKy
    cd client
    npm install
    ```
-2. Tạo file `.env` trong thư mục `client/` (tùy chọn, mặc định đã trỏ về cổng `5001`):
+2. Kiểm tra file `client/.env` (đã có sẵn):
    ```env
    VITE_API_URL=http://localhost:5001/api
    ```
@@ -126,20 +133,29 @@ cd 03_LTW_CuoiKy
 
 ---
 
+## 🔑 Tài khoản Demo (Mật khẩu mặc định: `123456`)
+
+| Vai trò | Email | Quyền hạn |
+| :--- | :--- | :--- |
+| **Admin** | `admin@ptit.edu.vn` | Quản lý Phim, Phòng chiếu, Suất chiếu, Thống kê doanh thu |
+| **Sinh viên PTIT (Member)** | `nhatddm.b24cn123@stu.ptit.edu.vn` | Đặt vé, áp mã giảm giá 35% (`PTIT35`), xem & hủy vé |
+
+---
+
 ## Quy ước mã phản hồi HTTP
 
 | Mã HTTP | Ý nghĩa | Trường hợp tiêu biểu trong hệ thống |
 | :--- | :--- | :--- |
-| `200 OK` | Thành công | Lấy danh sách, xem chi tiết, cập nhật, xóa thành công |
-| `201 Created` | Tạo mới thành công | Tạo phòng chiếu, tạo suất chiếu hoặc tạo đơn đặt vé mới |
-| `400 Bad Request` | Dữ liệu không hợp lệ | ID sai định dạng `ObjectId`, giá vé `< 30.000đ`, phòng đang bảo trì |
-| `401 Unauthorized` | Chưa xác thực | Thiếu token hoặc JWT token không hợp lệ / hết hạn |
-| `403 Forbidden` | Không đủ quyền | Tài khoản `member` gọi API `admin` hoặc xem vé của người khác |
+| `200 OK` | Thành công | Lấy danh sách, xem chi tiết, cập nhật, xóa, hủy vé thành công |
+| `201 Created` | Tạo mới thành công | Đăng ký, thêm phim/phòng/suất chiếu, tạo đơn đặt vé mới |
+| `400 Bad Request` | Dữ liệu không hợp lệ | ID sai `ObjectId`, thiếu trường bắt buộc, hủy vé dưới 2h, quá 8 ghế |
+| `401 Unauthorized` | Chưa xác thực | Thiếu token hoặc JWT không hợp lệ / hết hạn |
+| `403 Forbidden` | Không đủ quyền | `member` gọi API `admin`, xem/hủy vé người khác, không phải SV dùng `PTIT35` |
 | `404 Not Found` | Không tìm thấy | Sai đường dẫn API hoặc không tìm thấy bản ghi theo ID |
-| `409 Conflict` | Xung đột nghiệp vụ | Trùng tên phòng, xóa phòng đang có lịch, trùng giờ chiếu hoặc trùng ghế |
+| `409 Conflict` | Xung đột nghiệp vụ | Trùng email, trùng tên phòng, trùng giờ chiếu hoặc đặt trùng ghế |
 
 ---
 
 ## 📖 Tài liệu chi tiết từng phân hệ
 * Xem chi tiết API & Cơ sở dữ liệu tại: [`server/README.md`](./server/README.md)
-* Xem chi tiết UI, Redux & Custom Hooks tại: [`client/README.md`](./client/README.md)
+* Xem chi tiết UI, Redux, Context & Custom Hooks tại: [`client/README.md`](./client/README.md)
