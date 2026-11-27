@@ -80,6 +80,16 @@ export const getRevenueStats = async (req, res, next) => {
         },
       },
       { $unwind: '$showtime' },
+    ];
+
+    if (fromDate || toDate) {
+      const dateFilter = {};
+      if (fromDate) dateFilter.$gte = fromDate;
+      if (toDate) dateFilter.$lte = toDate;
+      dailyPipeline.push({ $match: { 'showtime.date': dateFilter } });
+    }
+
+    dailyPipeline.push(
       {
         $group: {
           _id: '$showtime.date',
@@ -90,8 +100,8 @@ export const getRevenueStats = async (req, res, next) => {
         },
       },
       { $project: { _id: 0 } },
-      { $sort: { date: 1 } },
-    ];
+      { $sort: { date: 1 } }
+    );
 
     const [byMovie, byDate, totalMovies] = await Promise.all([
       Booking.aggregate(moviePipeline),

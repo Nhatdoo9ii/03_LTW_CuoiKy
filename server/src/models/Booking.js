@@ -44,6 +44,10 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    promoCode: {
+      type: String,
+      default: null,
+    },
     paymentMethod: {
       type: String,
       default: 'mock_wallet',

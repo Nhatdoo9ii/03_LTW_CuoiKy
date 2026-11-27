@@ -1,12 +1,81 @@
+import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Showtime from '../models/Showtime.js';
+
+// Chuẩn hóa dữ liệu vé trả về để tương thích cả MyTicketsPage và BookingSuccessPage
+const formatBookingResponse = (bookingDoc, fallbackUser = null) => {
+  const obj = bookingDoc.toObject ? bookingDoc.toObject() : bookingDoc;
+  const populatedUser =
+    obj.userId && typeof obj.userId === 'object' && obj.userId._id
+      ? obj.userId
+      : null;
+  const userObj = populatedUser || fallbackUser;
+  const rawUserId = populatedUser
+    ? String(populatedUser._id)
+    : String(obj.userId || fallbackUser?._id || '');
+
+  const showtime =
+    obj.showtimeId && typeof obj.showtimeId === 'object' && obj.showtimeId._id
+      ? obj.showtimeId
+      : null;
+  const movie =
+    showtime?.movieId && typeof showtime.movieId === 'object'
+      ? showtime.movieId
+      : null;
+  const room =
+    showtime?.roomId && typeof showtime.roomId === 'object'
+      ? showtime.roomId
+      : null;
+
+  const seatDetails = (obj.seats || []).map((s) => ({
+    seatId: s.seatId,
+    code: s.seatId,
+    type: s.type,
+    price: s.price,
+  }));
+  const seatCodes = seatDetails.map((s) => s.seatId);
+
+  const digitsOnly = String(obj.bookingCode || '').replace(/\D/g, '');
+  const shortCode = digitsOnly.slice(-6) || '000000';
+
+  return {
+    ...obj,
+    id: String(obj._id),
+    shortCode,
+    userId: rawUserId,
+    userName: userObj?.fullName || '',
+    userEmail: userObj?.email || '',
+    userPhone: userObj?.phone || '',
+    showtimeId: showtime ? String(showtime._id) : String(obj.showtimeId || ''),
+    movieId: movie ? String(movie._id) : '',
+    movieTitle: movie?.title || 'Phim chiếu rạp PTIT',
+    originalTitle: movie?.originalTitle || '',
+    posterUrl: movie?.posterUrl || '',
+    ageRating: movie?.ageRating || 'P',
+    roomId: room ? String(room._id) : '',
+    roomName: room?.name || 'Phòng chiếu',
+    date: showtime?.date || '',
+    time: showtime?.startTime || '',
+    startTime: showtime?.startTime || '',
+    seats: seatCodes,
+    seatDetails,
+    subtotal: obj.originalPrice,
+    totalAmount: obj.totalPrice,
+  };
+};
 
 // @desc    Đặt vé mới (tối đa 8 ghế, chặn trùng ghế trả mã 409 Conflict, tính giảm giá & sinh mã QR)
 // @route   POST /api/bookings
 // @access  Private
 export const createBooking = async (req, res, next) => {
   try {
-    const { showtimeId, seats, combos = [], paymentMethod = 'MoMo' } = req.body;
+    const {
+      showtimeId,
+      seats,
+      combos = [],
+      paymentMethod = 'MoMo',
+      promoCode,
+    } = req.body;
 
     if (!showtimeId || !Array.isArray(seats) || seats.length === 0) {
       res.status(400);
@@ -18,9 +87,15 @@ export const createBooking = async (req, res, next) => {
       throw new Error('Mỗi lần đặt chỉ được chọn tối đa 8 ghế');
     }
 
-    const requestedSeatIds = seats.map((s) =>
-      typeof s === 'string' ? s.trim().toUpperCase() : s.seatId.trim().toUpperCase()
-    );
+    const requestedSeatIds = seats.map((s) => {
+      const rawId = typeof s === 'string' ? s : s?.seatId || s?.code || '';
+      return String(rawId).trim().toUpperCase();
+    });
+
+    if (requestedSeatIds.some((id) => !id)) {
+      res.status(400);
+      throw new Error('Danh sách ghế chứa mã ghế không hợp lệ');
+    }
 
     const uniqueSeatIds = [...new Set(requestedSeatIds)];
     if (uniqueSeatIds.length !== requestedSeatIds.length) {
@@ -38,10 +113,11 @@ export const createBooking = async (req, res, next) => {
       showtime.bookedSeats.includes(seatId)
     );
     if (alreadyBooked.length > 0) {
-      res.status(409);
-      throw new Error(
-        `Ghế ${alreadyBooked.join(', ')} đã có người đặt. Vui lòng chọn ghế khác!`
-      );
+      return res.status(409).json({
+        success: false,
+        message: `Ghế ${alreadyBooked.join(', ')} đã có người đặt. Vui lòng chọn ghế khác!`,
+        conflictSeats: alreadyBooked,
+      });
     }
 
     const vipRows = showtime.roomId?.vipRows || ['D', 'E', 'F'];
@@ -56,13 +132,34 @@ export const createBooking = async (req, res, next) => {
       };
     });
 
+    const normalizedCombos = Array.isArray(combos)
+      ? combos
+          .filter((c) => (Number(c?.quantity) || 1) > 0)
+          .map((c) => ({
+            comboId: String(c.comboId || c.id || ''),
+            name: String(c.name || ''),
+            quantity: Number(c.quantity) || 1,
+            price: Number(c.price) || 0,
+          }))
+      : [];
+
     const ticketSubtotal = formattedSeats.reduce((sum, item) => sum + item.price, 0);
-    const comboSubtotal = Array.isArray(combos)
-      ? combos.reduce((sum, c) => sum + (c.price || 0) * (c.quantity || 1), 0)
-      : 0;
+    const comboSubtotal = normalizedCombos.reduce(
+      (sum, c) => sum + c.price * c.quantity,
+      0
+    );
 
     const originalPrice = ticketSubtotal + comboSubtotal;
-    const discountAmount = req.user.isStudent ? Math.round(ticketSubtotal * 0.15) : 0;
+    const hasPromoField = Object.prototype.hasOwnProperty.call(req.body, 'promoCode');
+    const cleanPromoCode = promoCode ? String(promoCode).trim().toUpperCase() : null;
+
+    let discountAmount = 0;
+    if (cleanPromoCode === 'PTIT35') {
+      discountAmount = Math.round(ticketSubtotal * 0.35);
+    } else if (!hasPromoField && req.user.isStudent) {
+      discountAmount = Math.round(ticketSubtotal * 0.15);
+    }
+
     const totalPrice = Math.max(0, originalPrice - discountAmount);
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -81,8 +178,11 @@ export const createBooking = async (req, res, next) => {
     );
 
     if (!updatedShowtime) {
-      res.status(409);
-      throw new Error('Một hoặc nhiều ghế vừa được người khác đặt trước. Vui lòng thử lại!');
+      return res.status(409).json({
+        success: false,
+        message: 'Một hoặc nhiều ghế vừa được người khác đặt trước. Vui lòng thử lại!',
+        conflictSeats: uniqueSeatIds,
+      });
     }
 
     const booking = await Booking.create({
@@ -90,10 +190,11 @@ export const createBooking = async (req, res, next) => {
       userId: req.user._id,
       showtimeId,
       seats: formattedSeats,
-      combos,
+      combos: normalizedCombos,
       originalPrice,
       discountAmount,
       totalPrice,
+      promoCode: cleanPromoCode,
       paymentMethod,
       status: 'confirmed',
       qrCode,
@@ -102,7 +203,7 @@ export const createBooking = async (req, res, next) => {
     const populatedBooking = await Booking.findById(booking._id).populate({
       path: 'showtimeId',
       populate: [
-        { path: 'movieId', select: 'title posterUrl duration ageRating' },
+        { path: 'movieId', select: 'title originalTitle posterUrl duration ageRating genres' },
         { path: 'roomId', select: 'name' },
       ],
     });
@@ -110,7 +211,7 @@ export const createBooking = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Đặt vé thành công',
-      data: populatedBooking,
+      data: formatBookingResponse(populatedBooking, req.user),
     });
   } catch (error) {
     next(error);
@@ -126,7 +227,7 @@ export const getMyBookings = async (req, res, next) => {
       .populate({
         path: 'showtimeId',
         populate: [
-          { path: 'movieId', select: 'title posterUrl duration ageRating genres' },
+          { path: 'movieId', select: 'title originalTitle posterUrl duration ageRating genres' },
           { path: 'roomId', select: 'name' },
         ],
       })
@@ -135,7 +236,7 @@ export const getMyBookings = async (req, res, next) => {
     res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings,
+      data: bookings.map((b) => formatBookingResponse(b, req.user)),
     });
   } catch (error) {
     next(error);
@@ -147,12 +248,17 @@ export const getMyBookings = async (req, res, next) => {
 // @access  Private
 export const getBookingById = async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id)
+    const { id } = req.params;
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? Booking.findById(id)
+      : Booking.findOne({ bookingCode: id });
+
+    const booking = await query
       .populate('userId', 'fullName email phone isStudent')
       .populate({
         path: 'showtimeId',
         populate: [
-          { path: 'movieId', select: 'title posterUrl duration ageRating genres' },
+          { path: 'movieId', select: 'title originalTitle posterUrl duration ageRating genres' },
           { path: 'roomId', select: 'name' },
         ],
       });
@@ -172,7 +278,7 @@ export const getBookingById = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: booking,
+      data: formatBookingResponse(booking),
     });
   } catch (error) {
     next(error);
@@ -184,7 +290,13 @@ export const getBookingById = async (req, res, next) => {
 // @access  Private
 export const cancelBooking = async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id).populate('showtimeId');
+    const booking = await Booking.findById(req.params.id).populate({
+      path: 'showtimeId',
+      populate: [
+        { path: 'movieId', select: 'title originalTitle posterUrl duration ageRating genres' },
+        { path: 'roomId', select: 'name' },
+      ],
+    });
 
     if (!booking) {
       res.status(404);
@@ -230,7 +342,7 @@ export const cancelBooking = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Hủy vé thành công và đã hoàn trả ghế',
-      data: booking,
+      data: formatBookingResponse(booking, req.user),
     });
   } catch (error) {
     next(error);
