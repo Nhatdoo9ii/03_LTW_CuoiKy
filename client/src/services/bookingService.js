@@ -298,6 +298,16 @@ export const validatePromoCode = async (rawCode) => {
   }
 
   if (cleanCode === DEFAULT_PTIT_PROMO.code) {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.isStudent) {
+      return {
+        valid: false,
+        promo: null,
+        message:
+          'Mã ưu đãi PTIT35 chỉ áp dụng cho tài khoản sinh viên PTIT (@stu.ptit.edu.vn).',
+      };
+    }
+
     return {
       valid: true,
       promo: DEFAULT_PTIT_PROMO,

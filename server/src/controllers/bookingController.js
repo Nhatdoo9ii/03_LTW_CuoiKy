@@ -155,6 +155,12 @@ export const createBooking = async (req, res, next) => {
 
     let discountAmount = 0;
     if (cleanPromoCode === 'PTIT35') {
+      if (!req.user.isStudent) {
+        res.status(403);
+        throw new Error(
+          'Mã ưu đãi PTIT35 chỉ áp dụng cho tài khoản sinh viên PTIT (@stu.ptit.edu.vn)'
+        );
+      }
       discountAmount = Math.round(ticketSubtotal * 0.35);
     } else if (!hasPromoField && req.user.isStudent) {
       discountAmount = Math.round(ticketSubtotal * 0.15);
