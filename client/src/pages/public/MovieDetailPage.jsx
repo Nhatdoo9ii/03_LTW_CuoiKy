@@ -7,25 +7,54 @@ import MovieDetailHero from '../../components/movies/MovieDetailHero';
 import ShowtimeSelector from '../../components/movies/ShowtimeSelector';
 import TrailerModal from '../../components/movies/TrailerModal';
 
-const SHOW_DATES = [
-  { id: '2026-11-18', dayName: 'Hôm nay', dateLabel: '18/11' },
-  { id: '2026-11-19', dayName: 'Thứ 5', dateLabel: '19/11' },
-  { id: '2026-11-20', dayName: 'Thứ 6', dateLabel: '20/11' },
-  { id: '2026-11-21', dayName: 'Thứ 7', dateLabel: '21/11' },
-  { id: '2026-11-22', dayName: 'Chủ Nhật', dateLabel: '22/11' },
+const WEEKDAY_NAMES = [
+  'Chủ Nhật',
+  'Thứ 2',
+  'Thứ 3',
+  'Thứ 4',
+  'Thứ 5',
+  'Thứ 6',
+  'Thứ 7',
 ];
+
+// Chuyển chuỗi YYYY-MM-DD thành nhãn hiển thị (Hôm nay / Thứ ... + dd/mm)
+const formatDateOption = (dateStr) => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  return {
+    id: dateStr,
+    dayName: dateStr === todayStr ? 'Hôm nay' : WEEKDAY_NAMES[dateObj.getDay()],
+    dateLabel: `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`,
+  };
+};
+
+// Tạo sẵn 5 ngày kể từ hôm nay làm danh sách mặc định khi phim chưa có suất chiếu
+const getUpcomingDefaultDates = () => {
+  const list = [];
+  const base = new Date();
+  for (let i = 0; i < 5; i += 1) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    list.push(formatDateOption(iso));
+  }
+  return list;
+};
 
 function MovieDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [selectedDate, setSelectedDate] = useState(SHOW_DATES[0].id);
+  const [selectedDateOverride, setSelectedDateOverride] = useState(null);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
 
   // Gọi API lấy chi tiết phim + suất chiếu bằng custom hook useFetch
   const { data: apiResponse, loading } = useFetch(`/movies/${id}`);
 
-  // Ưu tiên dữ liệu từ MongoDB API, fallback sang mockData nếu server offline hoặc dùng id mẫu cũ
+  // Ưu tiên dữ liệu từ MongoDB API, fallback sang mockData nếu server offline
   const movie = useMemo(() => {
     if (apiResponse?.data?.movie) {
       return normalizeMovie(apiResponse.data.movie);
@@ -35,14 +64,46 @@ function MovieDetailPage() {
     );
   }, [apiResponse, id]);
 
-  // Lấy danh sách suất chiếu theo phim & ngày
+  // Lấy danh sách ngày chiếu động từ suất chiếu thật trong DB (hoặc 5 ngày tới nếu chưa có suất)
+  const dateOptions = useMemo(() => {
+    const apiShowtimes = apiResponse?.data?.showtimes;
+    if (Array.isArray(apiShowtimes) && apiShowtimes.length > 0) {
+      const uniqueDates = [...new Set(apiShowtimes.map((st) => st.date))].sort();
+      return uniqueDates.map(formatDateOption);
+    }
+
+    if (apiResponse?.data?.movie) {
+      return getUpcomingDefaultDates();
+    }
+
+    const mockDates = [
+      ...new Set(
+        mockData.showtimes
+          .filter((st) => st.movieId === movie.id)
+          .map((st) => st.date)
+      ),
+    ].sort();
+
+    return mockDates.length > 0
+      ? mockDates.map(formatDateOption)
+      : getUpcomingDefaultDates();
+  }, [apiResponse, movie.id]);
+
+  const selectedDate =
+    selectedDateOverride &&
+    dateOptions.some((d) => d.id === selectedDateOverride)
+      ? selectedDateOverride
+      : dateOptions[0]?.id || '';
+
+  // Lấy danh sách suất chiếu thật theo phim & ngày (không tự sinh suất giả)
   const availableShowtimes = useMemo(() => {
     const apiShowtimes = apiResponse?.data?.showtimes;
 
-    if (Array.isArray(apiShowtimes) && apiShowtimes.length > 0) {
-      const matchedApi = apiShowtimes.filter((st) => st.date === selectedDate);
-      if (matchedApi.length > 0) {
-        return matchedApi.map((st) => {
+    if (apiResponse?.data?.movie) {
+      if (!Array.isArray(apiShowtimes)) return [];
+      return apiShowtimes
+        .filter((st) => st.date === selectedDate)
+        .map((st) => {
           const room = st.roomId || {};
           const totalSeats =
             (room.totalRows || 8) * (room.seatsPerRow || 10);
@@ -58,64 +119,25 @@ function MovieDetailPage() {
             availableSeats: totalSeats - bookedCount,
           };
         });
-      }
     }
 
-    const matched = mockData.showtimes.filter(
-      (st) => st.movieId === movie.id && st.date === selectedDate
-    );
+    // Fallback khi server offline
+    return mockData.showtimes
+      .filter((st) => st.movieId === movie.id && st.date === selectedDate)
+      .map((st) => {
+        const room = mockData.rooms.find((r) => r.id === st.roomId) || {
+          name: 'Phòng chiếu 01',
+          totalSeats: 80,
+        };
+        const bookedCount = st.bookedSeats ? st.bookedSeats.length : 0;
 
-    // Nếu phim đang chiếu chưa có lịch riêng, tạo suất mẫu để test đặt vé
-    const rawList =
-      matched.length > 0
-        ? matched
-        : [
-            {
-              id: `${movie.id}-st1`,
-              movieId: movie.id,
-              roomId: 'r1',
-              date: selectedDate,
-              time: '10:30',
-              basePrice: 85000,
-              vipSurcharge: 15000,
-              bookedSeats: ['D4', 'D5'],
-            },
-            {
-              id: `${movie.id}-st2`,
-              movieId: movie.id,
-              roomId: 'r2',
-              date: selectedDate,
-              time: '15:45',
-              basePrice: 85000,
-              vipSurcharge: 15000,
-              bookedSeats: ['E5', 'E6', 'E7'],
-            },
-            {
-              id: `${movie.id}-st3`,
-              movieId: movie.id,
-              roomId: 'r3',
-              date: selectedDate,
-              time: '20:15',
-              basePrice: 95000,
-              vipSurcharge: 20000,
-              bookedSeats: ['F4', 'F5'],
-            },
-          ];
-
-    return rawList.map((st) => {
-      const room = mockData.rooms.find((r) => r.id === st.roomId) || {
-        name: 'Phòng chiếu 01',
-        totalSeats: 80,
-      };
-      const bookedCount = st.bookedSeats ? st.bookedSeats.length : 0;
-
-      return {
-        ...st,
-        roomName: room.name,
-        totalSeats: room.totalSeats,
-        availableSeats: room.totalSeats - bookedCount,
-      };
-    });
+        return {
+          ...st,
+          roomName: room.name,
+          totalSeats: room.totalSeats,
+          availableSeats: room.totalSeats - bookedCount,
+        };
+      });
   }, [apiResponse, movie.id, selectedDate]);
 
   // Chuyển sang trang chọn ghế /booking/:showtimeId
@@ -146,9 +168,9 @@ function MovieDetailPage() {
       <ShowtimeSelector
         status={movie.status}
         releaseDate={movie.releaseDate}
-        dates={SHOW_DATES}
+        dates={dateOptions}
         selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
+        onSelectDate={setSelectedDateOverride}
         showtimes={availableShowtimes}
         onSelectSlot={handleSelectSlot}
       />

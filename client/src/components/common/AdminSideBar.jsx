@@ -1,19 +1,20 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import logoPtit from '../../assets/logo-ptit.png';
 import styles from './AdminSidebar.module.css';
 
 function AdminSidebar() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  // Lấy thông tin Admin hiện tại từ localStorage
-  const savedUser = localStorage.getItem('user');
-  const adminUser = savedUser
-    ? JSON.parse(savedUser)
-    : { fullName: 'Admin Cinephile', role: 'Super Administrator' };
+  // Lấy thông tin Admin hiện tại từ AuthContext
+  const adminUser = user || {
+    fullName: 'Admin Cinephile',
+    role: 'Super Administrator',
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 
