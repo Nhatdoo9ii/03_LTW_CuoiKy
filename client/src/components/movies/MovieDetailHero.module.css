@@ -10,8 +10,9 @@
   position: relative;
   padding: 32px 0 48px;
   overflow: hidden;
-  background-color: #0b1120;
-  color: #f8fafc;
+  background-color: var(--bg-page);
+  color: var(--text-heading);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .backdropImage {
@@ -19,7 +20,8 @@
   inset: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(18px) brightness(0.35);
+  filter: blur(18px) brightness(0.95);
+  opacity: 0.22;
   transform: scale(1.08);
   z-index: 0;
 }
@@ -29,8 +31,8 @@
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(11, 17, 32, 0.72) 0%,
-    rgba(11, 17, 32, 0.94) 100%
+    rgba(248, 250, 252, 0.72) 0%,
+    rgba(248, 250, 252, 0.96) 100%
   );
   z-index: 1;
 }
@@ -41,22 +43,22 @@
   flex-wrap: wrap;
   gap: 8px;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin-bottom: 28px;
 }
 
 .breadcrumbLink {
-  color: #cbd5e1;
+  color: var(--text-body);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .breadcrumbLink:hover {
-  color: #fb7185;
+  color: var(--color-primary);
 }
 
 .breadcrumbCurrent {
-  color: #f8fafc;
+  color: var(--text-heading);
   font-weight: 600;
 }
 
@@ -71,8 +73,8 @@
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+  border: 1px solid var(--border-color);
 }
 
 .posterImg {
@@ -118,8 +120,9 @@
 }
 
 .durationTag {
-  background-color: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
+  background-color: var(--bg-subtle);
+  color: var(--text-heading);
+  border: 1px solid var(--border-color);
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -127,7 +130,7 @@
 }
 
 .ratingTag {
-  color: #fbbf24;
+  color: #d97706;
   font-size: 14px;
   font-weight: 700;
 }
@@ -136,19 +139,19 @@
   font-size: 32px;
   font-weight: 800;
   line-height: 1.25;
-  color: #ffffff;
+  color: var(--text-heading);
 }
 
 .originalTitle {
   font-size: 15px;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin-top: -8px;
 }
 
 .synopsis {
   font-size: 15px;
   line-height: 1.65;
-  color: #cbd5e1;
+  color: var(--text-body);
   max-width: 780px;
 }
 
@@ -157,8 +160,8 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 10px 24px;
   padding: 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   font-size: 14px;
 }
 
@@ -173,13 +176,13 @@
 }
 
 .metaLabel {
-  color: #94a3b8;
+  color: var(--text-muted);
   min-width: 85px;
   flex-shrink: 0;
 }
 
 .metaValue {
-  color: #f1f5f9;
+  color: var(--text-heading);
   font-weight: 500;
 }
 
@@ -193,9 +196,9 @@
 .trailerBtn {
   padding: 12px 22px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-heading);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -203,7 +206,7 @@
 }
 
 .trailerBtn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--bg-subtle);
 }
 
 .scrollBookBtn {
@@ -219,6 +222,55 @@
 
 .scrollBookBtn:hover {
   background-color: var(--color-primary-hover);
+}
+
+/* ================= DARK MODE ================= */
+:global(html[data-theme='dark']) .heroSection {
+  background-color: #0b1120;
+  color: #f8fafc;
+}
+
+:global(html[data-theme='dark']) .backdropImage {
+  filter: blur(18px) brightness(0.35);
+  opacity: 1;
+}
+
+:global(html[data-theme='dark']) .backdropOverlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 17, 32, 0.72) 0%,
+    rgba(11, 17, 32, 0.94) 100%
+  );
+}
+
+:global(html[data-theme='dark']) .posterBox {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+:global(html[data-theme='dark']) .durationTag {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+:global(html[data-theme='dark']) .ratingTag {
+  color: #fbbf24;
+}
+
+:global(html[data-theme='dark']) .metaGrid {
+  border-top-color: rgba(255, 255, 255, 0.12);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+:global(html[data-theme='dark']) .trailerBtn {
+  border-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+:global(html[data-theme='dark']) .trailerBtn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 768px) {
