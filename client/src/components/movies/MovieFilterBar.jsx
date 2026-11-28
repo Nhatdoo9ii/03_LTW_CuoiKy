@@ -1,4 +1,36 @@
+import { useMemo } from 'react';
 import styles from './MovieFilterBar.module.css';
+
+const WEEKDAY_NAMES = [
+  'Chủ Nhật',
+  'Thứ 2',
+  'Thứ 3',
+  'Thứ 4',
+  'Thứ 5',
+  'Thứ 6',
+  'Thứ 7',
+];
+
+// Sinh danh sách 7 ngày động kể từ hôm nay (value dạng YYYY-MM-DD khớp API)
+const buildUpcomingDates = (daysCount = 7) => {
+  const list = [];
+  const base = new Date();
+  for (let i = 0; i < daysCount; i += 1) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const value = `${yyyy}-${mm}-${dd}`;
+    const dayLabel =
+      i === 0 ? 'Hôm nay' : i === 1 ? 'Ngày mai' : WEEKDAY_NAMES[d.getDay()];
+    list.push({
+      value,
+      label: `${dayLabel} (${dd}/${mm})`,
+    });
+  }
+  return list;
+};
 
 function MovieFilterBar({
   searchTerm,
@@ -10,6 +42,7 @@ function MovieFilterBar({
   onFilterSubmit,
   onReset,
 }) {
+  const dateOptions = useMemo(() => buildUpcomingDates(7), []);
   return (
     <div className={styles.filterBox}>
       {/* Thanh tìm kiếm từ khóa trên cùng */}
@@ -72,10 +105,11 @@ function MovieFilterBar({
             className={styles.selectInput}
           >
             <option value="">Tất cả các ngày</option>
-            <option value="24/10">Hôm nay (24/10)</option>
-            <option value="25/10">Ngày mai (25/10)</option>
-            <option value="26/10">Thứ Bảy (26/10)</option>
-            <option value="27/10">Chủ Nhật (27/10)</option>
+            {dateOptions.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </select>
         </div>
 
